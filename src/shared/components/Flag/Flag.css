@@ -1,0 +1,2 @@
+.flag { width: 18px; height: 12px; border-radius: 2px; flex: none; }
+.with-flag { display: inline-flex; align-items: center; gap: 8px; }

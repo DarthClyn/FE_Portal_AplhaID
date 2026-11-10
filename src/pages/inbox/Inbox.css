@@ -1,0 +1,4 @@
+.inbox-file { display: flex; align-items: center; gap: 12px; }
+.inbox-file__icon { width: 32px; height: 32px; border-radius: 6px; background: var(--bg-sunk); color: var(--muted); display: grid; place-items: center; flex: none; }
+.inbox__new td:first-child strong::after { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); margin-left: 8px; vertical-align: middle; }
+.inbox-actions { justify-content: flex-end; }

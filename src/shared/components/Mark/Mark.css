@@ -1,0 +1,5 @@
+.mark { display: inline-grid; place-items: center; border-radius: 50%; flex: none; color: #fff; }
+.mark--pass { background: var(--ok-mark); }
+.mark--fail { background: var(--bad); }
+.mark--error { background: var(--warn); }
+.mark--todo { border: 1.5px solid var(--line); background: var(--bg); }

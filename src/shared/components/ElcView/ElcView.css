@@ -1,0 +1,5 @@
+.elc-summary__head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.elc-summary__head strong { font-size: 15px; }
+.elc-file { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; margin-top: 8px; font-size: 13.5px; color: var(--ink-2); }
+.elc-file svg { color: var(--muted); flex: none; }
+.elc-docs { margin-top: 20px; }

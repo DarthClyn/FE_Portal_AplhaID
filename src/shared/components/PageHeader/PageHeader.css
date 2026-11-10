@@ -1,0 +1,5 @@
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.page-header h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+.page-header__sub { color: var(--muted); margin-top: 6px; }
+.page-header__text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.page-header__actions { display: flex; gap: 12px; align-items: center; }

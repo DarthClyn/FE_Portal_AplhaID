@@ -1,0 +1,23 @@
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field--wide { grid-column: 1 / -1; }
+.field__label { font-size: 13.5px; font-weight: 500; color: var(--ink-2); display: flex; align-items: baseline; gap: 4px; }
+.field__req { color: var(--bad); }
+.field__tag { font-family: var(--mono); font-size: 10.5px; color: var(--faint); margin-left: 4px; }
+.field__error { color: var(--bad); font-size: 12.5px; display: flex; align-items: center; gap: 4px; }
+.input { width: 100%; height: 40px; border: 1px solid #D9DCE1; border-radius: 8px; padding: 0 12px; background: var(--bg); font-size: 14px; }
+.input::placeholder { color: var(--faint); }
+.input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43, 89, 168, .12); }
+.input:read-only, .input:disabled { background: var(--bg-sunk); color: var(--ink-2); }
+.input--area { height: auto; min-height: 88px; padding: 10px 12px; resize: vertical; line-height: 1.5; }
+.field--error .input { border-color: var(--bad); }
+.select { position: relative; }
+.select .input { appearance: none; padding-right: 36px; cursor: pointer; }
+.select__chev { position: absolute; right: 12px; top: 12px; color: var(--muted); pointer-events: none; }
+.segmented { display: flex; flex-wrap: wrap; gap: 8px; }
+.segmented__opt { height: 40px; padding: 0 16px; border: 1px solid #D9DCE1; border-radius: 8px; background: var(--bg); cursor: pointer; font-size: 14px; }
+.segmented__opt:hover { background: var(--bg-soft); }
+.segmented__opt--on { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; box-shadow: inset 0 0 0 1px var(--primary); }
+.checkbox { display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer; }
+.checkbox input { width: 16px; height: 16px; accent-color: var(--primary); }
+@media (max-width: 700px) { .field-grid { grid-template-columns: 1fr; } }

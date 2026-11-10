@@ -1,0 +1,15 @@
+.coll--flush { border-top: 1px solid var(--line); }
+.coll--flush:first-child { border-top: 0; }
+.coll--card { border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); background: var(--bg); margin-bottom: 12px; }
+.coll__head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 18px 24px; border: 0; background: none; cursor: pointer; text-align: left; }
+.coll__num { width: 26px; height: 26px; border-radius: 6px; background: var(--ok-soft); color: var(--ok); font-size: 12px; font-weight: 600; display: grid; place-items: center; flex: none; }
+.coll__titles { display: flex; align-items: baseline; gap: 12px; flex: 1; min-width: 0; }
+.coll__titles--stack { flex-direction: column; gap: 2px; }
+.coll__title { font-weight: 600; font-size: 15px; }
+.coll__summary { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.coll__aside { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; }
+.coll__chev { color: var(--muted); flex: none; }
+.coll__body { padding: 0 24px 24px; }
+.coll--card.coll--open .coll__body { border-top: 1px solid var(--line); padding-top: 20px; }
+.coll--open .coll__summary { display: none; }
+.coll--card.coll--open .coll__summary { display: block; }

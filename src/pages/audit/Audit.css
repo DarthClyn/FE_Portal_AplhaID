@@ -1,0 +1,7 @@
+.audit td { white-space: nowrap; }
+.audit__row--open td { background: var(--bg-soft); }
+.audit__detail td { background: var(--bg-soft); border-top: 0; padding-top: 0; padding-bottom: 18px; }
+.audit__grid { display: flex; flex-wrap: wrap; gap: 14px 40px; }
+.audit__grid div { display: flex; flex-direction: column; gap: 3px; font-size: 13px; white-space: normal; max-width: 360px; overflow-wrap: anywhere; }
+.audit__grid .muted { font-size: 12px; }
+.audit-foot { margin-top: 16px; color: var(--muted); font-size: 12.5px; display: flex; align-items: center; gap: 6px; }

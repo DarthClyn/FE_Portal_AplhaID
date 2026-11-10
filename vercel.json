@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/trust/:path*", "destination": "/api/trust?path=:path*" },
+    { "source": "/api/auth/:action", "destination": "/api/auth?action=:action" },
+    { "source": "/api/pila/:path*", "destination": "/api/pila?path=:path*" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}

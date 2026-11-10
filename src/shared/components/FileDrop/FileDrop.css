@@ -1,0 +1,6 @@
+.drop { border: 1.5px dashed #CDD2DA; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; text-align: center; background: var(--bg-soft); }
+.drop--large { padding: 56px 24px; }
+.drop--over, .drop:hover { border-color: var(--primary); background: var(--primary-soft); }
+.drop__title { color: var(--ink); font-size: 14px; }
+.drop__link { color: var(--primary); font-weight: 600; }
+.drop__hint { font-size: 12.5px; }

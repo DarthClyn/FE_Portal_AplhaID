@@ -1,0 +1,17 @@
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; border: 1px solid transparent; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .15s, border-color .15s; }
+.btn:disabled { cursor: not-allowed; }
+.btn--md { height: 38px; padding: 0 14px; font-size: 13.5px; }
+.btn--sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
+.btn--lg { height: 48px; padding: 0 20px; font-size: 15px; }
+.btn--block { width: 100%; }
+.btn--primary { background: var(--primary); color: #fff; box-shadow: 0 1px 2px rgba(43, 89, 168, .25); }
+.btn--primary:hover:not(:disabled) { background: var(--primary-hover); }
+.btn--primary:disabled { background: #C5D3EB; box-shadow: none; }
+.btn--secondary { background: var(--bg); border-color: var(--line); color: var(--ink); }
+.btn--secondary:hover:not(:disabled) { background: var(--bg-soft); }
+.btn--ghost { background: transparent; color: var(--ink-2); }
+.btn--ghost:hover:not(:disabled) { background: var(--bg-soft); }
+.btn--danger { background: var(--bg); border-color: var(--bad-line); color: var(--bad-ink); }
+.btn--danger:hover:not(:disabled) { background: var(--bad-soft); }
+.btn--link { background: none; padding: 0; height: auto; color: var(--primary); font-weight: 600; }
+.btn--link:hover:not(:disabled) { text-decoration: underline; }

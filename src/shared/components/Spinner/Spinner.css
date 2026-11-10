@@ -1,0 +1,2 @@
+.spinner { display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; opacity: .8; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
