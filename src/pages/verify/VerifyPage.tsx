@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Download, FileJson, Lock, Upload } from 'lucide-react';
+import { BadgeCheck, CalendarCheck, Download, FileJson, Fingerprint, Lock, PenLine, Upload } from 'lucide-react';
+import { PORTAL } from '@/config/portal';
 import {
   Button, Card, CopyId, FileDrop, KeyValue, Mark, PageHeader, Spinner, StatusPill, WithFlag,
 } from '@/shared/components';
@@ -61,13 +62,48 @@ export function VerifyPage() {
         )}
       />
       {state.kind === 'idle' ? (
-        <Card className="verify-start">
-          <FileDrop large accept=".json,.jwt,.txt,application/json" onFiles={onFiles}
-            title={<>Drop a signed eLC here or <span className="drop__link">browse</span></>}
-            hint="Signed eLC or credential: JSON (W3C) or VC-JWT. TOTM-issued ones are checked by TOTM, all others by PILA (SDK + NDAKey)." />
-          {state.error && <p className="verify-error">{state.error}</p>}
-          <p className="verify-note"><Lock size={13} /> The eLC is sent to the TOTM Trust API for the check but never stored. Only the result is kept.</p>
-        </Card>
+        <div className="page-grid">
+          <Card className="verify-upload">
+            <div className="verify-upload__head">
+              <h2>Upload a signed eLC</h2>
+              <p>JSON (W3C credential) or VC-JWT. You can also open one from the Inbox.</p>
+            </div>
+            <FileDrop large accept=".json,.jwt,.txt,application/json" onFiles={onFiles}
+              title={<>Drop the file here or <span className="drop__link">browse</span></>}
+              hint=".json · .jwt" />
+            {state.error && (
+              <div className="verify-error" role="alert">
+                <strong>This file can't be verified</strong>
+                <span>{state.error}</span>
+              </div>
+            )}
+            <p className="verify-note"><Lock size={13} /> The file is used only for this check and is never stored. Only the result is recorded.</p>
+          </Card>
+          <div className="sticky">
+            <Card>
+              <h3 className="verify-side__title">What we check</h3>
+              <ul className="verify-steps">
+                {STEPS.map((x) => (
+                  <li key={x.title}>
+                    <span className="verify-steps__icon">{x.icon}</span>
+                    <span><strong>{x.title}</strong><span>{x.text}</span></span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+            <Card>
+              <h3 className="verify-side__title">Who checks it</h3>
+              <div className="verify-route">
+                <span className="via via--totm">TOTM</span>
+                <span>Issued by a bank in the TOTM issuer registry: checked by the TOTM Trust API.</span>
+              </div>
+              <div className="verify-route">
+                <span className="via via--pila">{PORTAL.externalPlatform.name}</span>
+                <span>Any other issuer: checked with {PORTAL.externalPlatform.name}'s SDK and NDAKey.</span>
+              </div>
+            </Card>
+          </div>
+        </div>
       ) : (
         <div className="page-grid">
           <Card padded={false}>
@@ -91,6 +127,13 @@ export function VerifyPage() {
     </>
   );
 }
+
+const STEPS = [
+  { icon: <Fingerprint size={16} />, title: 'Integrity', text: 'Nothing changed since it was signed' },
+  { icon: <CalendarCheck size={16} />, title: 'Status', text: 'Active today: not expired, revoked or replaced' },
+  { icon: <PenLine size={16} />, title: 'Issuer', text: 'Signed by the issuer it names' },
+  { icon: <BadgeCheck size={16} />, title: 'Trusted issuer', text: 'That issuer is on the trusted list' },
+];
 
 const PENDING: Check[] = [
   { id: 'integrity', title: 'Integrity', question: 'Unchanged since signing?', state: 'error', detail: [] },

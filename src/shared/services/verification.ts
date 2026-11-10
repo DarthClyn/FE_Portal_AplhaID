@@ -46,24 +46,61 @@ export const issuerOf = (vc: Record<string, unknown>) =>
 
 export function looksLikeVc(v: unknown): v is Record<string, unknown> {
   const o = v as Record<string, unknown>;
-  return !!o && typeof o === 'object' && Array.isArray(o['@context']) && !!o.proof && !!issuerOf(o);
+  return !!o && typeof o === 'object' && (Array.isArray(o['@context']) || typeof o['@context'] === 'string') && !!o.proof && !!issuerOf(o);
 }
 
 /** A VC-JWT / SD-JWT (PILA's compact format): three base64url parts. */
 export const looksLikeJwt = (v: unknown): v is string =>
   typeof v === 'string' && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*(~[A-Za-z0-9_~.-]*)?$/.test(v.trim());
 
-/** Parses an uploaded file: a JSON credential, or a VC-JWT string. */
+/** Keys under which tools commonly wrap a credential (e.g. {"credential": …}, {"vc": "<jwt>"}). */
+const WRAPPERS = ['credential', 'verifiableCredential', 'vc', 'jwt', 'document', 'data', 'signedCredential'];
+
+/** Finds the credential in parsed JSON: the object itself, a JWT string, or either one inside a common wrapper. */
+function unwrap(v: unknown, depth = 0): Record<string, unknown> | string | null {
+  if (looksLikeVc(v)) return v;
+  if (looksLikeJwt(v)) return v.trim();
+  if (depth > 2 || !v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  for (const k of WRAPPERS) {
+    const inner = Array.isArray(o[k]) ? (o[k] as unknown[])[0] : o[k];
+    const found = inner === undefined ? null : unwrap(inner, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Why a JSON object is not a signed credential, in plain words. */
+function whatIsMissing(v: unknown): string {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return 'it is not a credential object';
+  const o = v as Record<string, unknown>;
+  if (o.header && o.payload && !o.signature) {
+    return 'it is a decoded JWT (header and payload only), without the signature that proves it. Upload the original .jwt file (the one-line eyJ… text)';
+  }
+  if (!o.credentialSubject) {
+    const inner = WRAPPERS.map((k) => o[k]).find((x) => x && typeof x === 'object');
+    if (inner) return whatIsMissing(Array.isArray(inner) ? inner[0] : inner);
+  }
+  if (o.credentialSubject && !o.proof) return 'it has no signature (proof); it looks like an unsigned credential';
+  if (!o['@context']) return 'it has no @context';
+  if (!issuerOf(o)) return 'it names no issuer';
+  if (!o.proof) return 'it has no signature (proof)';
+  return 'its structure was not recognised';
+}
+
+/** Parses an uploaded file: a JSON credential, a VC-JWT, or either one wrapped in a JSON object. */
 export function parseCredentialText(text: string, fileName: string): Record<string, unknown> | string {
   const t = text.trim();
+  let parsed: unknown;
   try {
-    const v = JSON.parse(t);
-    if (looksLikeVc(v)) return v;
-    if (looksLikeJwt(v)) return v.trim();
+    parsed = JSON.parse(t);
   } catch {
     if (looksLikeJwt(t)) return t;
+    throw new Error(`${fileName} is neither JSON nor a VC-JWT.`);
   }
-  throw new Error(`${fileName} is not a signed credential (a W3C credential with a proof, or a VC-JWT).`);
+  const found = unwrap(parsed);
+  if (found) return found;
+  throw new Error(`${fileName} is not a signed credential: ${whatIsMissing(parsed)}.`);
 }
 
 const PILA_LABEL = PORTAL.externalPlatform.name;
