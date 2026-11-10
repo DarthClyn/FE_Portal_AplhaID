@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Plus, Save, Upload } from 'lucide-react';
+import { Download, Plus, Save, Sparkles, Upload } from 'lucide-react';
 import { PORTAL, bankLabel } from '@/config/portal';
 import { Banner, Button, Card, Collapsible, FieldValues, Mark, PageHeader } from '@/shared/components';
 import {
@@ -15,6 +15,9 @@ import { DraftsMenu } from './DraftsMenu';
 import { trustApi, type IssueResponse } from '@/shared/services/trustApi';
 import { FormSection, type Attachment } from './FormSection';
 import { SidePanel } from './SidePanel';
+import { useDemo } from '@/demo/DemoProvider';
+import { SigningModal } from '@/demo/SigningModal';
+import { sampleElc } from '@/demo/sampleElc';
 import './Issue.css';
 
 const MAX_ATTACH = 10 * 1024 * 1024;
@@ -35,6 +38,7 @@ export function IssuePage() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [origin, setOrigin] = useState<Draft['origin']>('manual');
   const importInput = useRef<HTMLInputElement>(null);
+  const demo = useDemo();
 
   const errors = useMemo(() => validate(form), [form]);
   const done = requiredDone(errors);
@@ -68,6 +72,15 @@ export function IssuePage() {
     } catch (e) {
       setNotice({ tone: 'bad', title: 'Could not import this file', text: (e as Error).message });
     }
+  };
+
+  const fillSample = () => {
+    setForm(sampleElc());
+    setOrigin('manual');
+    setTouched(new Set());
+    setAttempted(false);
+    setOpen({ credit: true, parties: true, amount: true });
+    setNotice({ tone: 'info', title: 'Sample values filled', text: 'Demo data only. Check each section, then sign.' });
   };
 
   const addFiles = async (files: File[]) => {
@@ -121,7 +134,8 @@ export function IssuePage() {
         const { elcPdfBase64 } = await import('@/shared/services/pdf');
         files.push({ filename: `${form.fields.lcNumber}.pdf`, mimeType: 'application/pdf', data: elcPdfBase64(form) });
       }
-      const r = await trustApi.issueElc({ data: apiData(form), attachments: files });
+      // Keep the signing pop-up up long enough to read, even when the API answers quickly.
+      const [r] = await Promise.all([trustApi.issueElc({ data: apiData(form), attachments: files }), new Promise((ok) => setTimeout(ok, 2200))]);
       rememberSigned(r.data.vc);
       if (draftId) { deleteDraft(draftId); setDraftId(null); }
       setIssued(r.data);
@@ -152,11 +166,12 @@ export function IssuePage() {
         title={isIssued ? 'eLC issued' : 'Issue eLC'}
         actions={isIssued ? (
           <>
-            <Button icon={<Download size={16} />} onClick={() => downloadJson(issued.vc, `${form.fields.lcNumber || issued.txId}.json`)}>Download signed eLC</Button>
+            <Button data-tour="download-elc" icon={<Download size={16} />} onClick={() => downloadJson(issued.vc, `${form.fields.lcNumber || issued.txId}.json`)}>Download signed eLC</Button>
             <Button icon={<Plus size={16} />} onClick={reset}>Issue another eLC</Button>
           </>
         ) : (
           <>
+            {demo.mode && <Button data-tour="fill-sample" icon={<Sparkles size={16} />} onClick={fillSample} disabled={phase === 'signing'}>Fill sample data</Button>}
             <DraftsMenu currentId={draftId} onOpen={openDraft} disabled={phase === 'signing'} />
             <Button icon={<Save size={16} />} onClick={saveCurrentDraft} disabled={phase === 'signing'}>Save draft</Button>
             <Button variant="primary" icon={<Upload size={16} />} onClick={() => importInput.current?.click()} disabled={phase === 'signing'}>Import JSON</Button>
@@ -170,8 +185,9 @@ export function IssuePage() {
         </Banner>
       )}
       {notice && !isIssued && <Banner tone={notice.tone} title={notice.title} onClose={() => setNotice(null)}>{notice.text}</Banner>}
+      {phase === 'signing' && <SigningModal />}
       <div className="page-grid">
-        <Card padded={false} className={phase === 'signing' ? 'is-busy' : ''}>
+        <Card padded={false} className={phase === 'signing' ? 'is-busy' : ''} data-tour="issue-form">
           {SECTIONS.map((s) => {
             const errs = sectionErrors(s, errors);
             const shown = errs.filter(show);

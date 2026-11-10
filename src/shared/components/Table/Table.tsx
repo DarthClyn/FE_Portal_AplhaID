@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './Table.css';
 
-export const TableCard = ({ toolbar, children, footer }: { toolbar?: ReactNode; children: ReactNode; footer?: ReactNode }) => (
-  <div className="table-card">
+export const TableCard = ({ toolbar, children, footer, tour }: { toolbar?: ReactNode; children: ReactNode; footer?: ReactNode; tour?: string }) => (
+  <div className="table-card" data-tour={tour}>
     {toolbar && <div className="table-card__toolbar">{toolbar}</div>}
     <div className="table-card__scroll">{children}</div>
     {footer && <div className="table-card__footer">{footer}</div>}

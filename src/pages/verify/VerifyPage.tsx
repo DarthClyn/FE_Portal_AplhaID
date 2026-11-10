@@ -106,7 +106,7 @@ export function VerifyPage() {
         </div>
       ) : (
         <div className="page-grid">
-          <Card padded={false}>
+          <Card padded={false} data-tour="verify-checks">
             <div className="checks__head">
               <h2>Verification checks</h2>
               <span className="checks__file">{state.kind === 'done' && <span className={`via via--${state.result.platform.toLowerCase()}`}>via {state.result.platform}</span>}<FileJson size={14} /> {state.fileName}</span>
@@ -203,7 +203,7 @@ function ResultCard({ r }: { r: Verification }) {
       : { title: 'Could not confirm', sub: 'A check could not be completed. Treat as not verified and try again.' };
   const pill = r.overall === 'pass' ? (r.status ?? 'active') : r.overall === 'fail' ? (r.checks[0].state === 'fail' ? 'Untrusted' : r.status ?? 'Failed') : 'Not checked';
   return (
-    <Card padded={false} className={`result result--${r.overall}`}>
+    <Card padded={false} className={`result result--${r.overall}`} data-tour="verify-result">
       <div className="result__top">
         <div className="verdict">
           <Mark state={r.overall} size={40} />

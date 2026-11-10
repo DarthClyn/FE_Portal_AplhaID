@@ -77,12 +77,12 @@ export function OverviewPage() {
       } />
       {error && <Banner tone="bad" title="Could not load eLCs">{error.message}</Banner>}
       {msg && <Banner tone="info" title={msg} onClose={() => setMsg(null)} />}
-      <div className="stats">
+      <div className="stats" data-tour="overview-stats">
         <Stat label="Active" value={data?.counts.active} sub={data ? `Out of ${data.counts.total} issued` : ''} icon={<CheckCircle2 size={16} />} tone="ok" />
         <Stat label="Expiring in 30 days" value={data?.counts.expiringIn30Days} sub={soon[0]?.validUntil ? `Earliest: ${fmtDate(soon[0].validUntil)}` : 'None due'} icon={<AlertTriangle size={16} />} tone="warn" />
         <Stat label="Expired" value={data?.counts.expired} sub={data?.counts.suspended ? `${data.counts.suspended} suspended` : 'Past their expiry date'} icon={<XCircle size={16} />} tone="neutral" />
       </div>
-      <TableCard
+      <TableCard tour="overview-table"
         toolbar={
           <>
             <SearchInput value={q} onChange={setQ} placeholder="Search Tx ID, VC ID or issuer" />

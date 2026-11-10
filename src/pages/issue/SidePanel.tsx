@@ -27,7 +27,7 @@ export function SidePanel(p: Props) {
     return (
       <div className="sticky">
         <ElcSummaryCard form={p.form} />
-        <Card>
+        <Card data-tour="issued">
           <div className="ready">
             <span className="ready__title"><Mark state="pass" size={18} /> Issued · Active</span>
             <span className="muted">{fmtDateTime(p.issuedAt)}</span>
@@ -44,7 +44,7 @@ export function SidePanel(p: Props) {
   return (
     <div className="sticky">
       <ElcSummaryCard form={p.form} />
-      <Card>
+      <Card data-tour={ready ? 'ready' : undefined}>
         <div className="ready">
           {showBad
             ? <span className="ready__title ready__title--bad"><Mark state="fail" size={18} /> {p.issues} field{p.issues === 1 ? '' : 's'} need{p.issues === 1 ? 's' : ''} attention</span>
@@ -54,7 +54,7 @@ export function SidePanel(p: Props) {
         <div className={`progress${showBad ? ' progress--warn' : ''}`}><span style={{ width: `${(p.done / total) * 100}%` }} /></div>
         <KeyValue rows={[{ label: 'Format', value: 'W3C credential' }]} />
         <div className="side-check"><Checkbox label="Embed a PDF copy" checked={p.embedPdf} onChange={(e) => p.setEmbedPdf(e.target.checked)} /></div>
-        <Button variant="primary" size="lg" block className="side-cta" icon={<Signature size={18} />}
+        <Button variant="primary" size="lg" block className="side-cta" icon={<Signature size={18} />} data-tour="sign"
           loading={p.phase === 'signing'} disabled={showBad} onClick={p.onSign}>
           {p.phase === 'signing' ? 'Signing…' : p.phase === 'failed' ? 'Try again' : 'Sign & issue eLC'}
         </Button>

@@ -74,7 +74,7 @@ export function InboxPage() {
         actions={<Button variant="ghost" icon={<RefreshCw size={15} />} onClick={reload} loading={loading && !!data}>Refresh</Button>} />
       {error && <Banner tone="bad" title="Could not load the inbox">{error.message}</Banner>}
       {msg && <Banner tone={msg.tone} title={msg.text} onClose={() => setMsg(null)} />}
-      <TableCard
+      <TableCard tour="inbox-table"
         toolbar={
           <>
             <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search file, Tx ID or VC ID" />
@@ -96,7 +96,7 @@ export function InboxPage() {
                 </EmptyState>
               </td></tr>
             )}
-            {paginate(rows, page, PAGE).map((f) => (
+            {paginate(rows, page, PAGE).map((f, i, list) => (
               <tr key={f.fileId} className={f.readAt ? '' : 'inbox__new'}>
                 <td>
                   <span className="inbox-file">
@@ -113,7 +113,8 @@ export function InboxPage() {
                   <span className="row gap-8 inbox-actions">
                     {busy === f.fileId ? <Spinner size={16} /> : (
                       <>
-                        {f.contentType === 'application/json' && <Button size="sm" variant="secondary" icon={<ShieldCheck size={14} />} onClick={() => void verify(f)}>Verify</Button>}
+                        {f.contentType === 'application/json' && <Button size="sm" variant="secondary" icon={<ShieldCheck size={14} />} onClick={() => void verify(f)}
+                          data-tour={list.findIndex((x) => x.contentType === 'application/json') === i ? 'inbox-verify' : undefined}>Verify</Button>}
                         <Button size="sm" variant="ghost" icon={<Download size={14} />} onClick={() => void download(f)}>Download</Button>
                         <RowMenu items={[{ label: 'Mark as read', disabled: !!f.readAt, onClick: () => void markRead(f) }]} />
                       </>

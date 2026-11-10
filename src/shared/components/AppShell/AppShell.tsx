@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronsUpDown, FilePlus2, History, Inbox, LayoutGrid, LogOut, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsUpDown, FilePlus2, History, Inbox, LayoutGrid, LogOut, MousePointerClick, PlayCircle, ShieldCheck } from 'lucide-react';
+import { useDemo } from '@/demo/DemoProvider';
 import { JURISDICTIONS, PORTAL } from '@/config/portal';
 import { initials, useAuth } from '@/shared/services/auth';
 import './AppShell.css';
@@ -52,6 +53,7 @@ export function AppShell() {
 
 function UserMenu() {
   const { user, logout } = useAuth();
+  const demo = useDemo();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -66,6 +68,10 @@ function UserMenu() {
       {open && (
         <div className="user-menu" role="menu">
           <div className="user-menu__who">Signed in as <strong>{user?.username}</strong></div>
+          <div className="user-menu__label">Demo</div>
+          <button role="menuitem" className="user-menu__item" onClick={() => { setOpen(false); demo.start('manual'); }}><MousePointerClick size={15} /> Guided demo (manual)</button>
+          <button role="menuitem" className="user-menu__item" onClick={() => { setOpen(false); demo.start('auto'); }}><PlayCircle size={15} /> Auto demo</button>
+          <div className="user-menu__sep" />
           <button role="menuitem" className="user-menu__item" onClick={() => void logout()}><LogOut size={15} /> Sign out</button>
         </div>
       )}
