@@ -33,6 +33,13 @@ export function DemoProvider({ children }: { children: ReactNode }) {
 
 interface Box { top: number; left: number; width: number; height: number }
 const boxOf = (el: HTMLElement): Box => { const r = el.getBoundingClientRect(); return { top: r.top, left: r.left, width: r.width, height: r.height }; };
+/** One box around every element the selector matches. */
+const unionBox = (els: HTMLElement[]): Box => {
+  const bs = els.map(boxOf);
+  const top = Math.min(...bs.map((b) => b.top)), left = Math.min(...bs.map((b) => b.left));
+  return { top, left, width: Math.max(...bs.map((b) => b.left + b.width)) - left, height: Math.max(...bs.map((b) => b.top + b.height)) - top };
+};
+const all = (sel?: string) => (sel ? Array.from(document.querySelectorAll<HTMLElement>(sel)) : []);
 
 function Tour({ mode, index, setIndex, stop }: { mode: DemoMode; index: number; setIndex: (i: number) => void; stop: () => void }) {
   const navigate = useNavigate();
@@ -40,6 +47,7 @@ function Tour({ mode, index, setIndex, stop }: { mode: DemoMode; index: number; 
   const step: DemoStep = STEPS[index];
   const last = index === STEPS.length - 1;
   const [box, setBox] = useState<Box | null>(null);
+  const [anchor, setAnchor] = useState<Box | null>(null);
   const [paused, setPaused] = useState(false);
   const [acting, setActing] = useState(false);
   const [cursor, setCursor] = useState<{ x: number; y: number; click: boolean; on: boolean }>({ x: window.innerWidth / 2, y: window.innerHeight / 2, click: false, on: false });
@@ -54,6 +62,7 @@ function Tour({ mode, index, setIndex, stop }: { mode: DemoMode; index: number; 
   useEffect(() => {
     const id = ++run.current;
     setBox(null);
+    setAnchor(null);
     setActing(false);
     if (step.route && !location.pathname.startsWith(step.route)) navigate(step.route);
     let found: HTMLElement | null = null;
@@ -63,10 +72,13 @@ function Tour({ mode, index, setIndex, stop }: { mode: DemoMode; index: number; 
       const el = q(step.target);
       if (el && el !== found) {
         found = el;
-        el.scrollIntoView({ behavior: 'smooth', block: el.offsetHeight > window.innerHeight * 0.7 ? 'start' : 'center' });
+        el.scrollIntoView({ behavior: 'smooth', block: all(step.target).length > 1 || el.offsetHeight > window.innerHeight * 0.7 ? 'start' : 'center' });
       }
-      if (el) setBox(boxOf(el));
-      else if (Date.now() - t0 > 400) setBox(null);
+      const els = all(step.target);
+      if (el) setBox(els.length > 1 ? unionBox(els) : boxOf(el));
+      const a = q(step.cardAnchor);
+      setAnchor(a ? boxOf(a) : null);
+      if (!el && Date.now() - t0 > 400) setBox(null);
     }, 120);
     return () => clearInterval(tick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,7 +154,7 @@ function Tour({ mode, index, setIndex, stop }: { mode: DemoMode; index: number; 
     <div className={`tour tour--${mode}`} aria-live="polite">
       {mode === 'auto' && <div className="tour__block" />}
       {spot ? <div className="tour__spot" style={spot} /> : <div className="tour__dim" />}
-      <TourCard step={step} index={index} box={spot} mode={mode} paused={paused} acting={acting}
+      <TourCard step={step} index={index} box={anchor ?? spot} mode={mode} paused={paused} acting={acting}
         onNext={step.action ? () => void act() : next} onBack={back} onPause={() => setPaused((p) => !p)} onExit={stop} last={last} />
       {cursor.on || cursor.x !== window.innerWidth / 2 ? (
         <div className={`tour__cursor${cursor.click ? ' tour__cursor--click' : ''}${cursor.on ? '' : ' tour__cursor--off'}`} style={{ transform: `translate(${cursor.x}px, ${cursor.y}px)` }}>

@@ -6,8 +6,10 @@ export interface DemoStep {
   id: string;
   flow: 1 | 2;
   route?: string;
-  /** CSS selector of the highlighted element; none = a centred card. */
+  /** CSS selector(s) of the highlighted element(s); several matches are highlighted as one area. None = a centred card. */
   target?: string;
+  /** Place the step card next to this element instead of the whole highlighted area. */
+  cardAnchor?: string;
   title: string;
   body: string;
   /** What the viewer (manual) or the cursor (auto) clicks. */
@@ -22,44 +24,27 @@ export interface DemoStep {
 
 export const STEPS: DemoStep[] = [
   {
-    id: 'welcome', flow: 1,
-    title: 'Welcome to the Bank Alpha eLC portal',
-    body: 'Two short flows: first we issue an electronic Letter of Credit and sign it with the bank\'s own key, then we verify an eLC issued by another bank on another platform.',
-    dwell: 5,
-  },
-  {
-    id: 'overview', flow: 1, route: '/overview', target: '[data-tour="overview-stats"]',
+    id: 'overview', flow: 1, route: '/overview',
+    target: '[data-tour="overview-stats"], [data-tour="overview-table"]', cardAnchor: '[data-tour="overview-stats"]',
     title: 'Overview',
-    body: 'Every eLC Bank Alpha has issued: how many are active, which expire soon, and which have expired. The list below is searchable by Tx ID and VC ID.',
-    dwell: 5,
-  },
-  {
-    id: 'overview-table', flow: 1, route: '/overview', target: '[data-tour="overview-table"]',
-    title: 'Issued eLCs',
-    body: 'Each row is one eLC: its transaction ID, credential ID, issue and expiry dates, and live status. The eLC content itself is never stored here, only IDs and status.',
-    dwell: 5,
+    body: 'Every eLC Bank Alpha has issued: how many are active, expiring soon or expired, and one row per eLC with its Tx ID, VC ID, dates and live status. Only IDs and status are kept here, never the eLC content.',
+    dwell: 7,
   },
   {
     id: 'issue', flow: 1, route: '/issue', target: '[data-tour="fill-sample"]',
     title: 'Issue an eLC',
-    body: 'The form follows the SWIFT MT700 layout. For the demo, fill it with sample values.',
+    body: 'The form follows the SWIFT MT700 layout: credit, parties, amount, payment, shipment and documents. For the demo, fill it with sample values.',
     action: { selector: '[data-tour="fill-sample"]', label: 'Click "Fill sample data"' },
     waitFor: '[data-tour="ready"]',
-    dwell: 3,
-  },
-  {
-    id: 'form', flow: 1, route: '/issue', target: '[data-tour="issue-form"]',
-    title: 'All required fields are filled',
-    body: 'Credit, parties, amount, payment, shipment and documents. Each field shows its MT700 tag. The side panel confirms all required fields are complete.',
-    dwell: 5,
+    dwell: 4,
   },
   {
     id: 'sign', flow: 1, route: '/issue', target: '[data-tour="sign"]',
     title: 'Sign and issue',
-    body: 'Signing turns the form into a W3C verifiable credential, signed with Bank Alpha\'s own key (its DID). Any change afterwards is detectable.',
+    body: 'All required fields are complete. Signing turns the form into a W3C verifiable credential, signed with Bank Alpha\'s own key (its DID). Any change afterwards is detectable.',
     action: { selector: '[data-tour="sign"]', label: 'Click "Sign & issue eLC"', real: true },
     waitFor: '[data-tour="issued"]',
-    dwell: 3,
+    dwell: 4,
   },
   {
     id: 'send', flow: 1, route: '/issue', target: '[data-tour="download-elc"]',
@@ -68,36 +53,19 @@ export const STEPS: DemoStep[] = [
     dwell: 6,
   },
   {
-    id: 'flow2', flow: 2,
-    title: 'Flow 2 · Verify eLCs issued by other banks',
-    body: 'Now the other direction: an eLC issued by a bank on another platform arrives at Bank Alpha. We check it before relying on it.',
-    dwell: 5,
-  },
-  {
     id: 'inbox', flow: 2, route: '/inbox', target: '[data-tour="inbox-table"]',
-    title: 'Received eLCs',
-    body: 'Files other platforms send to Bank Alpha land in the inbox. Select one and click Verify, or go to Verify eLC to upload a file from your device.',
+    title: 'Verify eLCs issued by other banks',
+    body: 'eLCs other platforms send to Bank Alpha land in the inbox. Select one and click Verify, or go to Verify eLC to upload a file from your device.',
     action: { selector: '[data-tour="inbox-verify"]', label: 'Click "Verify" on a file' },
     waitFor: '[data-tour="verify-result"]',
-    dwell: 4,
+    dwell: 5,
     fallback: 'verify-sample',
   },
   {
-    id: 'checks', flow: 2, route: '/verify', target: '[data-tour="verify-checks"]',
-    title: 'Four independent checks',
-    body: 'Integrity: unchanged since signing. Status: still active today. Issuer: signed by the issuer it names. Trusted issuer: that issuer is on the trusted list. "via PILA" means it was checked with PILA\'s SDK and NDAKey.',
-    dwell: 7,
-  },
-  {
-    id: 'verdict', flow: 2, route: '/verify', target: '[data-tour="verify-result"]',
-    title: 'The verdict',
-    body: 'All four checks must pass. Change a single character in the file and Integrity fails; an issuer outside the trusted list fails the last check.',
-    dwell: 6,
-  },
-  {
-    id: 'done', flow: 2,
-    title: 'That\'s the demo',
-    body: 'Issued with the bank\'s own key, verified across platforms in seconds, and every action recorded in the audit log.',
-    dwell: 6,
+    id: 'checks', flow: 2, route: '/verify',
+    target: '[data-tour="verify-checks"], [data-tour="verify-result"]', cardAnchor: '[data-tour="verify-result"]',
+    title: 'Four checks, one verdict',
+    body: 'Integrity: unchanged since signing. Status: active today. Issuer: signed by the issuer it names. Trusted issuer: on the trusted list. All four must pass. "via PILA" or "via TOTM" shows who checked it.',
+    dwell: 9,
   },
 ];

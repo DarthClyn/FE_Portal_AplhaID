@@ -2,7 +2,7 @@
 //
 // Who verifies depends on who issued it:
 //   - issued by a bank in the TOTM issuer registry → TOTM Trust API (TrustVC content check + verification context);
-//   - anything else (PILA-issued eLCs, VC-JWTs, did:nda issuers…) → PILA: the pila-verifier runs PILA's Go SDK and
+//   - anything else (PILA-issued eLCs, VC-JWTs, did:nda issuers…) → PILA: the Trust API's /pila/verify runs PILA's Go SDK and
 //     NDAKey's verification context API.
 import { JURISDICTIONS, PORTAL, jurisdictionFromBic, type Jurisdiction } from '@/config/portal';
 import { ApiError } from './http';

@@ -4,7 +4,7 @@
   "rewrites": [
     { "source": "/api/trust/:path*", "destination": "/api/trust?path=:path*" },
     { "source": "/api/auth/:action", "destination": "/api/auth?action=:action" },
-    { "source": "/api/pila/:path*", "destination": "/api/pila?path=:path*" },
+    { "source": "/api/pila/context", "destination": "/api/pila" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
