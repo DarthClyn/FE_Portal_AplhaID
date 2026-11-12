@@ -34,7 +34,7 @@ export const STEPS: DemoStep[] = [
     id: 'issue', flow: 1, route: '/issue', target: '[data-tour="fill-sample"]',
     title: 'Issue an eLC',
     body: 'The form follows the SWIFT MT700 layout: credit, parties, amount, payment, shipment and documents. For the demo, fill it with sample values.',
-    action: { selector: '[data-tour="fill-sample"]', label: 'Click "Fill sample data"' },
+    action: { selector: '[data-tour="fill-sample"]', label: 'Click "Fill details"' },
     waitFor: '[data-tour="ready"]',
     dwell: 4,
   },

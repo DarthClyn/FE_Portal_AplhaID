@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Plus, Save, Sparkles, Upload } from 'lucide-react';
+import { Download, Plus, Save, Upload } from 'lucide-react';
 import { PORTAL, bankLabel } from '@/config/portal';
 import { Banner, Button, Card, Collapsible, FieldValues, Mark, PageHeader } from '@/shared/components';
 import {
@@ -17,7 +17,8 @@ import { FormSection, type Attachment } from './FormSection';
 import { SidePanel } from './SidePanel';
 import { useDemo } from '@/demo/DemoProvider';
 import { SigningModal } from '@/demo/SigningModal';
-import { sampleElc } from '@/demo/sampleElc';
+import { sampleElc } from '@/test-docs/sampleElc'; // test-docs
+import { FillDetailsButton } from '@/test-docs/FillDetailsButton'; // test-docs
 import './Issue.css';
 
 const MAX_ATTACH = 10 * 1024 * 1024;
@@ -80,7 +81,7 @@ export function IssuePage() {
     setTouched(new Set());
     setAttempted(false);
     setOpen({ credit: true, parties: true, amount: true });
-    setNotice({ tone: 'info', title: 'Sample values filled', text: 'Demo data only. Check each section, then sign.' });
+    setNotice({ tone: 'ok', title: 'Sample details filled', text: `${PORTAL.bank.name} sample eLC with a new LC number. Check each section, then sign.` });
   };
 
   const addFiles = async (files: File[]) => {
@@ -171,7 +172,7 @@ export function IssuePage() {
           </>
         ) : (
           <>
-            {demo.mode && <Button data-tour="fill-sample" icon={<Sparkles size={16} />} onClick={fillSample} disabled={phase === 'signing'}>Fill sample data</Button>}
+            <FillDetailsButton onFill={fillSample} force={!!demo.mode} disabled={phase === 'signing'} />{/* test-docs */}
             <DraftsMenu currentId={draftId} onOpen={openDraft} disabled={phase === 'signing'} />
             <Button icon={<Save size={16} />} onClick={saveCurrentDraft} disabled={phase === 'signing'}>Save draft</Button>
             <Button variant="primary" icon={<Upload size={16} />} onClick={() => importInput.current?.click()} disabled={phase === 'signing'}>Import JSON</Button>

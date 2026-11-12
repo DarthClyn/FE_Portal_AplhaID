@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ChevronsUpDown, FilePlus2, History, Inbox, LayoutGrid, LogOut, MousePointerClick, PlayCircle, ShieldCheck } from 'lucide-react';
 import { useDemo } from '@/demo/DemoProvider';
+import { TestDocsToggle } from '@/test-docs/TestDocsToggle'; // test-docs
 import { JURISDICTIONS, PORTAL } from '@/config/portal';
 import { initials, useAuth } from '@/shared/services/auth';
 import './AppShell.css';
@@ -71,6 +72,7 @@ function UserMenu() {
           <div className="user-menu__label">Demo</div>
           <button role="menuitem" className="user-menu__item" onClick={() => { setOpen(false); demo.start('manual'); }}><MousePointerClick size={15} /> Guided demo (manual)</button>
           <button role="menuitem" className="user-menu__item" onClick={() => { setOpen(false); demo.start('auto'); }}><PlayCircle size={15} /> Auto demo</button>
+          <TestDocsToggle />{/* test-docs */}
           <div className="user-menu__sep" />
           <button role="menuitem" className="user-menu__item" onClick={() => void logout()}><LogOut size={15} /> Sign out</button>
         </div>

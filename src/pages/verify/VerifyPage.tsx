@@ -10,6 +10,7 @@ import { takeVerifyHandoff } from '@/shared/services/session';
 import {
   looksLikeJwt, looksLikeVc, parseCredentialText, verifyCredential, type Check, type Verification,
 } from '@/shared/services/verification';
+import { TestDocsPicker } from '@/test-docs/TestDocsPicker'; // test-docs
 import './Verify.css';
 
 type State =
@@ -48,6 +49,15 @@ export function VerifyPage() {
     }
   };
 
+  // test-docs: verify a sample file chosen in the Test documents card.
+  const onTestDoc = async (text: string, fileName: string) => {
+    try {
+      await run(parseCredentialText(text, fileName), fileName);
+    } catch (e) {
+      setState({ kind: 'idle', error: (e as Error).message });
+    }
+  };
+
   const reset = () => setState({ kind: 'idle' });
 
   return (
@@ -63,6 +73,7 @@ export function VerifyPage() {
       />
       {state.kind === 'idle' ? (
         <div className="page-grid">
+          <div>
           <Card className="verify-upload">
             <div className="verify-upload__head">
               <h2>Upload a signed eLC</h2>
@@ -79,6 +90,8 @@ export function VerifyPage() {
             )}
             <p className="verify-note"><Lock size={13} /> The file is used only for this check and is never stored. Only the result is recorded.</p>
           </Card>
+          <TestDocsPicker onPick={onTestDoc} />{/* test-docs */}
+          </div>
           <div className="sticky">
             <Card>
               <h3 className="verify-side__title">What we check</h3>

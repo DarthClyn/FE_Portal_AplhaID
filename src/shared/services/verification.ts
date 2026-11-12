@@ -56,12 +56,25 @@ export const looksLikeJwt = (v: unknown): v is string =>
 /** Keys under which tools commonly wrap a credential (e.g. {"credential": …}, {"vc": "<jwt>"}). */
 const WRAPPERS = ['credential', 'verifiableCredential', 'vc', 'jwt', 'document', 'data', 'signedCredential'];
 
+/**
+ * W3C VC 2.0 "EnvelopedVerifiableCredential": a signed VC-JWT carried in JSON as a data: URL, e.g.
+ * {"@context": [...], "type": "EnvelopedVerifiableCredential", "id": "data:application/vc+jwt,eyJ…"}.
+ */
+function envelopedJwt(o: Record<string, unknown>): string | null {
+  const types = Array.isArray(o.type) ? o.type : [o.type];
+  if (!types.includes('EnvelopedVerifiableCredential') || typeof o.id !== 'string') return null;
+  const m = /^data:application\/(?:vc\+jwt|vc\+sd-jwt|vc-ld\+jwt|jwt)(?:;[^,]*)?,(.+)$/.exec(o.id.trim());
+  return m && looksLikeJwt(m[1]) ? m[1].trim() : null;
+}
+
 /** Finds the credential in parsed JSON: the object itself, a JWT string, or either one inside a common wrapper. */
 function unwrap(v: unknown, depth = 0): Record<string, unknown> | string | null {
   if (looksLikeVc(v)) return v;
   if (looksLikeJwt(v)) return v.trim();
   if (depth > 2 || !v || typeof v !== 'object') return null;
   const o = v as Record<string, unknown>;
+  const jwt = envelopedJwt(o);
+  if (jwt) return jwt;
   for (const k of WRAPPERS) {
     const inner = Array.isArray(o[k]) ? (o[k] as unknown[])[0] : o[k];
     const found = inner === undefined ? null : unwrap(inner, depth + 1);
@@ -81,7 +94,7 @@ function whatIsMissing(v: unknown): string {
     const inner = WRAPPERS.map((k) => o[k]).find((x) => x && typeof x === 'object');
     if (inner) return whatIsMissing(Array.isArray(inner) ? inner[0] : inner);
   }
-  if (o.credentialSubject && !o.proof) return 'it has no signature (proof); it looks like an unsigned credential';
+  if (o.credentialSubject && !o.proof) return 'it has no signature (proof); it looks like an unsigned credential. For a PILA eLC, upload the original .jwt file or its signed JSON form (EnvelopedVerifiableCredential)';
   if (!o['@context']) return 'it has no @context';
   if (!issuerOf(o)) return 'it names no issuer';
   if (!o.proof) return 'it has no signature (proof)';
