@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, FileJson, FileText, Image as ImageIcon, Inbox, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Download, FileJson, FileKey2, FileText, Image as ImageIcon, Inbox, RefreshCw, ShieldCheck } from 'lucide-react';
 import { PORTAL } from '@/config/portal';
 import {
   Banner, Button, Chip, CopyId, EmptyState, PageHeader, Pagination, RowMenu, SearchInput, Spinner, StatusPill, TableCard, paginate,
@@ -14,6 +14,8 @@ import { useAsync } from '@/shared/services/useAsync';
 import './Inbox.css';
 
 type Filter = 'all' | 'new' | 'read';
+/** Files that can hold a signed credential: JSON (W3C credential) or a .jwt (VC-JWT). */
+const VERIFIABLE = ['application/json', 'application/jwt', 'application/vc+jwt'];
 const PAGE = 10;
 
 /** Files partners sent to the Alpha ID inbox (POST /pila/send on their side). */
@@ -113,8 +115,8 @@ export function InboxPage() {
                   <span className="row gap-8 inbox-actions">
                     {busy === f.fileId ? <Spinner size={16} /> : (
                       <>
-                        {f.contentType === 'application/json' && <Button size="sm" variant="secondary" icon={<ShieldCheck size={14} />} onClick={() => void verify(f)}
-                          data-tour={list.findIndex((x) => x.contentType === 'application/json') === i ? 'inbox-verify' : undefined}>Verify</Button>}
+                        {VERIFIABLE.includes(f.contentType) && <Button size="sm" variant="secondary" icon={<ShieldCheck size={14} />} onClick={() => void verify(f)}
+                          data-tour={list.findIndex((x) => VERIFIABLE.includes(x.contentType)) === i ? 'inbox-verify' : undefined}>Verify</Button>}
                         <Button size="sm" variant="ghost" icon={<Download size={14} />} onClick={() => void download(f)}>Download</Button>
                         <RowMenu items={[{ label: 'Mark as read', disabled: !!f.readAt, onClick: () => void markRead(f) }]} />
                       </>
@@ -131,4 +133,4 @@ export function InboxPage() {
 }
 
 const icon = (type: string) =>
-  type === 'application/json' ? <FileJson size={16} /> : type.startsWith('image/') ? <ImageIcon size={16} /> : <FileText size={16} />;
+  type === 'application/json' ? <FileJson size={16} /> : type.includes('jwt') ? <FileKey2 size={16} /> : type.startsWith('image/') ? <ImageIcon size={16} /> : <FileText size={16} />;
