@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import './Popover.css';
 
 /** A trigger and a floating panel that closes on outside click or Escape. */
@@ -9,7 +9,30 @@ export function Popover({ trigger, children, align = 'right', width }: {
   width?: number;
 }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+
+  // The panel floats above the page (position: fixed), so a scrolling table or card never clips it; it opens upward
+  // when there is no room below.
+  useLayoutEffect(() => {
+    if (!open || !ref.current) return;
+    const place = () => {
+      const r = ref.current!.getBoundingClientRect();
+      const h = panel.current?.offsetHeight ?? 0;
+      const below = window.innerHeight - r.bottom - 12;
+      const up = h > below && r.top - 12 > below;
+      setPos({
+        position: 'fixed',
+        ...(up ? { bottom: window.innerHeight - r.top + 6 } : { top: r.bottom + 6 }),
+        ...(align === 'right' ? { right: window.innerWidth - r.right } : { left: r.left }),
+      });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
+  }, [open, align]);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
@@ -21,7 +44,11 @@ export function Popover({ trigger, children, align = 'right', width }: {
   return (
     <div className="popover" ref={ref} onClick={(e) => e.stopPropagation()}>
       {trigger({ open, toggle: () => setOpen((o) => !o) })}
-      {open && <div className={`popover__panel popover__panel--${align}`} style={width ? { width } : undefined}>{children(() => setOpen(false))}</div>}
+      {open && (
+        <div ref={panel} className={`popover__panel popover__panel--${align}`} style={{ ...pos, ...(width ? { width } : {}) }}>
+          {children(() => setOpen(false))}
+        </div>
+      )}
     </div>
   );
 }

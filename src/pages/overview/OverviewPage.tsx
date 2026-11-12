@@ -147,6 +147,8 @@ export function OverviewPage() {
                   <td>
                     <RowMenu items={[
                       { label: 'View details', icon: <FileText size={15} />, onClick: () => navigate(elcPath(v.vcId)) },
+                      ...(v.status === 'active' && !sentOf(v) ? [{ label: `Send to ${PORTAL.partners.find((p) => p.platform)?.name ?? 'advising bank'}`, icon: <Send size={15} />, onClick: () => void send(v),
+                        title: hasFile ? undefined : 'Opens the eLC so you can load its signed file, then send' }] : []),
                       { label: 'Download signed eLC', icon: <Download size={15} />, disabled: !hasFile, onClick: () => download(v),
                         title: hasFile ? undefined : 'Only eLCs issued in this browser session can be downloaded here' },
                       { label: 'Copy Tx ID', icon: <Copy size={15} />, onClick: () => { void copyText(v.txId); setMsg({ tone: 'info', text: `Copied ${v.txId}` }); } },
