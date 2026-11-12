@@ -16,13 +16,13 @@ export async function verificationContext(env, body, requestId) {
   if (!key) return { called: false, skipped: 'no NDAKey verifier key configured (PILA_PARTNER_API_KEY)' };
   const { holderDid, vcId, issuerDid } = body ?? {};
   if (!str(vcId) || !str(issuerDid)) return { called: false, skipped: 'the credential has no ID or issuer' };
-  if (!str(holderDid)) return { called: false, skipped: 'the credential has no holder DID (credentialSubject.id), which NDAKey needs' };
   let res;
   try {
     res = await fetch(`${base}/vp/verification-context`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': key, ...(requestId ? { 'x-request-id': requestId } : {}) },
-      body: JSON.stringify({ holderDid, vcIds: [{ vcId, issuerDid }] }),
+      // holderDid is only an input the API asks for (who presented it); it plays no part in the checks. Sent when known.
+      body: JSON.stringify({ ...(str(holderDid) ? { holderDid } : {}), vcIds: [{ vcId, issuerDid }] }),
       signal: AbortSignal.timeout(20000),
     });
   } catch (e) {

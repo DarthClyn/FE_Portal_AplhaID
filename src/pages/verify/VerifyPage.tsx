@@ -143,7 +143,7 @@ export function VerifyPage() {
 
 const STEPS = [
   { icon: <Fingerprint size={16} />, title: 'Integrity', text: 'Nothing changed since it was signed' },
-  { icon: <CalendarCheck size={16} />, title: 'Status', text: 'Active today: not expired, revoked or replaced' },
+  { icon: <CalendarCheck size={16} />, title: 'Status', text: 'Active today, not expired or suspended' },
   { icon: <PenLine size={16} />, title: 'Issuer', text: 'Signed by the issuer it names' },
   { icon: <BadgeCheck size={16} />, title: 'Trusted issuer', text: 'That issuer is on the trusted list' },
 ];

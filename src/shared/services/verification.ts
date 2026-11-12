@@ -253,7 +253,7 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
     const checks: Check[] = [
       { id: 'integrity', title: 'Integrity', question: 'Unchanged since signing?', state: 'error', detail },
       { id: 'status', title: 'Status', question: 'Still valid today?', state: 'error', detail },
-      { id: 'issuer', title: 'Issuer', question: 'Issuer DID resolves?', state: 'error', detail },
+      { id: 'issuer', title: 'Issuer', question: 'Signed by the stated issuer?', state: 'error', detail },
       { id: 'trusted', title: 'Trusted issuer', question: `Trusted by ${PILA_LABEL}?`, state: 'error', detail },
     ];
     if (err.status === 400) checks.forEach((c) => { c.state = 'fail'; c.detail = [{ text: err.message, state: 'fail' }]; });
@@ -262,10 +262,6 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
   const c = r.checks;
   const nd = r.ndakey;
   const reg = r.issuerRegistry;
-
-  // NDAKey keeps no record for issuers outside it, so its "not_found" adds nothing then (as in the Orchestration Layer).
-  const outside = (reg?.checked && !reg.registered) || nd.isIssuerTrusted === false;
-  const ndStatus = nd.status === 'not_found' && outside ? undefined : nd.status;
 
   // Integrity: the SDK's signature check.
   const sigState: CheckState = c.signature.passed ? 'pass' : isNetworkError(c.signature.error) ? 'error' : 'fail';
@@ -280,20 +276,19 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
       ],
   };
 
-  // Status: SDK expiry + revocation, and NDAKey's live status when it was asked.
-  const sDetail: Check['detail'] = [];
-  if (!c.expiration.skipped) sDetail.push({ text: c.expiration.passed ? 'Within its validity period' : c.expiration.error ?? 'Expired', state: c.expiration.passed ? 'pass' : 'fail' });
-  if (!c.revocation.skipped) sDetail.push({ text: c.revocation.passed ? 'Not revoked' : c.revocation.error ?? 'Revoked', state: c.revocation.passed ? 'pass' : 'fail' });
-  if (ndStatus) sDetail.push({ text: `${PILA_LABEL} network status: ${ndStatus.replace('_', ' ')}`, state: ndStatus === 'active' || ndStatus === 'verified' ? 'pass' : 'fail' });
-  else if (nd.called && nd.error) sDetail.push({ text: `Live status not confirmed: ${nd.error}`, state: 'error' });
-  else if (!nd.called && nd.skipped) sDetail.push({ text: `Live status not checked: ${nd.skipped}`, state: 'error' });
-  else if (outside) sDetail.push({ text: `Issuer is not on the ${PILA_LABEL} network, so it keeps no live record`, state: 'pass' });
-  const statusBad = !c.expiration.passed || !c.revocation.passed || ['revoked', 'expired', 'not_found'].includes(ndStatus ?? '');
-  const status: Check = {
-    id: 'status', title: 'Status', question: 'Still valid today?',
-    state: statusBad ? 'fail' : sDetail.some((d) => d.state === 'error') && !ndStatus ? 'error' : 'pass',
-    detail: sDetail.length ? sDetail : [{ text: 'No expiry or revocation declared', state: 'pass' }],
+  // Status: PILA's verification context only. Active passes; expired, revoked or not on record fails; no answer = not checked.
+  const ndStatus = nd.called && !nd.error ? nd.status : undefined;
+  const NDA_STATUS: Record<string, { text: string; state: CheckState }> = {
+    active: { text: `Active on the ${PILA_LABEL} network`, state: 'pass' },
+    verified: { text: `Active on the ${PILA_LABEL} network`, state: 'pass' },
+    expired: { text: `Expired on the ${PILA_LABEL} network`, state: 'fail' },
+    revoked: { text: `Revoked on the ${PILA_LABEL} network`, state: 'fail' },
+    not_found: { text: `Not on record with ${PILA_LABEL}: the network has no live status for this eLC`, state: 'fail' },
   };
+  const sd = ndStatus
+    ? NDA_STATUS[ndStatus] ?? { text: `${PILA_LABEL} network status: ${ndStatus}`, state: 'fail' as CheckState }
+    : { text: `Live status not checked: ${nd.error ?? nd.skipped ?? `${PILA_LABEL} verification context not asked`}`, state: 'error' as CheckState };
+  const status: Check = { id: 'status', title: 'Status', question: 'Still valid today?', state: sd.state, detail: [sd] };
 
   // Issuer: was it signed by the issuer it names? The SDK resolves that DID's key and checks the signature with it.
   // (Whether the issuer is registered / trusted is the fourth check.)
@@ -332,9 +327,7 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
   }
   const trusted: Check = { id: 'trusted', title: 'Trusted issuer', question: `Trusted by ${PILA_LABEL}?`, state: tState, detail: [{ text: tText, state: tState }] };
 
-  const pill = !c.revocation.passed || ndStatus === 'revoked' ? 'revoked'
-    : !c.expiration.passed || ndStatus === 'expired' ? 'expired'
-      : ndStatus === 'not_found' ? 'not on record' : ndStatus ?? null;
+  const pill = ndStatus === 'not_found' ? 'not on record' : ndStatus === 'verified' ? 'active' : ndStatus ?? null;
   const proof = proofOf(input);
   integrity.facts = [
     ...fact('Format', r.format === 'jwt' ? 'VC-JWT' : 'JSON-LD (Data Integrity)'),
@@ -345,8 +338,7 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
   status.facts = [
     ...fact('Valid from', r.validFrom ? fmtDate(r.validFrom) : null),
     ...fact('Valid until', dateWithDistance(r.validUntil) ?? 'No expiry declared'),
-    ...fact('Revocation', c.revocation.skipped ? 'No status list declared' : c.revocation.passed ? 'Not revoked' : 'Revoked'),
-    ...fact('NDAKey status', nd.status?.replace('_', ' ')),
+    ...fact('PILA status', nd.status?.replace('_', ' ')),
     ...fact('NDAKey request', nd.requestId, { mono: true }),
   ];
   issuer.facts = [
@@ -357,7 +349,6 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
   trusted.facts = [
     ...fact('NDAKey registry', reg ? (reg.checked ? (reg.registered ? `Registered as ${reg.type ?? 'unknown'}` : 'Not registered') : reg.error ?? 'Not checked') : null),
     ...fact('Trusted (NDAKey)', nd.isIssuerTrusted === undefined ? null : nd.isIssuerTrusted ? 'Yes' : 'No'),
-    ...fact('Holder DID', r.holder, { mono: true, copy: true }),
     ...fact('Credential type', r.types?.join(', ')),
   ];
   return base([integrity, status, issuer, trusted], input, r.issuer ?? fallbackIssuer, r.id ?? null, requestId, r.subject ?? {}, pill);
