@@ -193,6 +193,7 @@ function CheckRow({ check, pending, open, onToggle }: { check: Check; pending: b
 }
 
 const reason = (r: Verification) => {
+  if (r.headline) return r.headline;
   const failed = r.checks.find((c) => c.state === 'fail');
   if (!failed) return '';
   if (failed.id === 'integrity') return 'changed after signing';

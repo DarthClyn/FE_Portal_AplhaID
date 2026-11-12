@@ -39,6 +39,8 @@ export interface Verification {
   checkedAt: string;
   ref: string;
   fields: Record<string, unknown>;
+  /** Plain-words reason shown in the verdict when it is clearer than the first failed check. */
+  headline?: string;
 }
 
 export const issuerOf = (vc: Record<string, unknown>) =>
@@ -238,8 +240,6 @@ async function verifyTotm(vc: Record<string, unknown>, issuer: BankEntry | null)
 
 // ---------- PILA (PILA Go SDK + NDAKey verification context) ----------
 
-/** A resolver or network failure means "could not check", not "bad credential". */
-const isNetworkError = (e?: string) => !!e && /HTTP request|dial tcp|timeout|no such host|Forbidden|connection refused|not reachable/i.test(e);
 
 async function verifyPila(input: Record<string, unknown> | string): Promise<Verification> {
   const fallbackIssuer = typeof input === 'string' ? null : issuerOf(input);
@@ -261,18 +261,26 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
   }
   const c = r.checks;
   const nd = r.ndakey;
-  const reg = r.issuerRegistry;
+  // The issuer key comes from PILA's verification context or, when PILA has none, from the signature itself (only if
+  // that key's address is the issuer DID). PILA's SDK checks the signature with it. Registration is check 4 only.
+  const ctxOk = nd.called && !nd.error;
+  const noKey = !c.issuer.passed && !/not signed by the stated issuer/i.test(c.issuer.error ?? '');
+  const otherSigner = !c.signature.passed && (/not signed by the stated issuer|not by the issuer/i.test(`${c.issuer.error ?? ''} ${c.signature.error ?? ''}`));
 
-  // Integrity: the SDK's signature check.
-  const sigState: CheckState = c.signature.passed ? 'pass' : isNetworkError(c.signature.error) ? 'error' : 'fail';
+  // 1. Integrity: does the signature match the contents?
+  const sigState: CheckState = c.signature.passed ? 'pass' : noKey ? 'error' : 'fail';
+  const sigText = c.signature.passed ? 'Signature matches the contents'
+    : noKey ? "The issuer's key is not available, so the signature can't be checked"
+      : otherSigner ? "Signature doesn't match the stated issuer: the content was changed or someone else signed it"
+        : r.format === 'jwt' ? 'Signature does not match the contents' : 'Contents changed after signing';
   const integrity: Check = {
     id: 'integrity', title: 'Integrity', question: 'Unchanged since signing?', state: sigState,
     detail: r.format === 'jwt'
-      ? [{ text: 'Token decoded', state: 'pass' }, { text: c.signature.passed ? 'Signature matches the contents' : c.signature.error ?? 'Signature does not match', state: sigState }]
+      ? [{ text: 'Token decoded', state: 'pass' }, { text: sigText, state: sigState }]
       : [
         { text: 'Document fields locked in a fixed order', state: 'pass' },
         { text: 'Document fingerprint calculated', state: 'pass' },
-        { text: c.signature.passed ? 'Contents match the signature' : c.signature.error ?? 'Contents changed after signing', state: sigState },
+        { text: sigText, state: sigState },
       ],
   };
 
@@ -283,49 +291,31 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
     verified: { text: `Active on the ${PILA_LABEL} network`, state: 'pass' },
     expired: { text: `Expired on the ${PILA_LABEL} network`, state: 'fail' },
     revoked: { text: `Revoked on the ${PILA_LABEL} network`, state: 'fail' },
-    not_found: { text: `Not on record with ${PILA_LABEL}: the network has no live status for this eLC`, state: 'fail' },
+    not_found: { text: `Not on record with ${PILA_LABEL}`, state: 'fail' },
   };
   const sd = ndStatus
     ? NDA_STATUS[ndStatus] ?? { text: `${PILA_LABEL} network status: ${ndStatus}`, state: 'fail' as CheckState }
     : { text: `Live status not checked: ${nd.error ?? nd.skipped ?? `${PILA_LABEL} verification context not asked`}`, state: 'error' as CheckState };
   const status: Check = { id: 'status', title: 'Status', question: 'Still valid today?', state: sd.state, detail: [sd] };
 
-  // Issuer: was it signed by the issuer it names? The SDK resolves that DID's key and checks the signature with it.
-  // (Whether the issuer is registered / trusted is the fourth check.)
+  // 3. Issuer: did the issuer named in the credential sign it?
   const did = r.issuer ?? fallbackIssuer ?? '';
-  const shortDid = did.length > 30 ? `${did.slice(0, 22)}…${did.slice(-6)}` : did;
-  let issState: CheckState;
-  let issText: string;
-  if (!c.issuer.passed) {
-    issState = isNetworkError(c.issuer.error) ? 'error' : 'fail';
-    issText = issState === 'error' ? `Could not look up the key of ${shortDid}: ${c.issuer.error}` : `The stated issuer ${shortDid} could not be found`;
-  } else if (c.signature.passed) {
-    issState = 'pass';
-    issText = `Signature belongs to the stated issuer ${shortDid}`;
-  } else {
-    issState = sigState === 'error' ? 'error' : 'fail';
-    issText = `Signature does not match the key of the stated issuer ${shortDid}`;
-  }
+  const [issState, issText]: [CheckState, string] =
+    c.signature.passed ? ['pass', 'Signed by the stated issuer']
+      : otherSigner ? ['fail', 'Not signed by the stated issuer']
+        : noKey ? ['error', "Can't confirm: the issuer's key is not available"]
+          : ['error', "Can't confirm the signer: the contents don't match the signature"];
   const issuer: Check = {
     id: 'issuer', title: 'Issuer', question: 'Signed by the stated issuer?', state: issState,
     detail: [{ text: issText, state: issState }],
   };
 
-  // Trusted issuer: only NDAKey's isIssuerTrusted counts; the registry alone can only say "not registered".
-  let tState: CheckState;
-  let tText: string;
-  if (nd.called && nd.isIssuerTrusted !== undefined) {
-    tState = nd.isIssuerTrusted ? 'pass' : 'fail';
-    const as = reg?.registered ? ` · registered as ${reg.type ?? 'unknown'}` : '';
-    tText = nd.isIssuerTrusted ? `Trusted by NDAKey (${PILA_LABEL})${as}` : `Not trusted by NDAKey${as}`;
-  } else if (reg?.checked && !reg.registered) {
-    tState = 'fail';
-    tText = `Issuer is not registered with NDAKey (${PILA_LABEL})`;
-  } else {
-    tState = 'error';
-    tText = `Trust not confirmed${reg?.registered ? ` (registered with NDAKey as ${reg.type ?? 'unknown'})` : ''}: ${nd.error ?? nd.skipped ?? reg?.error ?? 'NDAKey not asked'}`;
-  }
-  const trusted: Check = { id: 'trusted', title: 'Trusted issuer', question: `Trusted by ${PILA_LABEL}?`, state: tState, detail: [{ text: tText, state: tState }] };
+  // 4. Trusted issuer: is the issuer registered with PILA? (PILA's verification context, isIssuerTrusted.)
+  const [tState, tText]: [CheckState, string] =
+    !ctxOk ? ['error', `Could not reach ${PILA_LABEL}: ${nd.error ?? nd.skipped ?? 'verification context not asked'}`]
+      : nd.isIssuerTrusted ? ['pass', `Registered with ${PILA_LABEL}`]
+        : ['fail', `Not registered with ${PILA_LABEL}`];
+  const trusted: Check = { id: 'trusted', title: 'Trusted issuer', question: `Registered with ${PILA_LABEL}?`, state: tState, detail: [{ text: tText, state: tState }] };
 
   const pill = ndStatus === 'not_found' ? 'not on record' : ndStatus === 'verified' ? 'active' : ndStatus ?? null;
   const proof = proofOf(input);
@@ -343,15 +333,15 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
   ];
   issuer.facts = [
     ...fact('Issuer DID', did, { mono: true, copy: true }),
-    ...fact('Key found in', r.issuerSource),
-    ...fact('Public key', nd.didPublicKey, { mono: true, copy: true }),
+    ...fact('Public key', r.issuerPublicKey, { mono: true, copy: true }),
+    ...fact('Key from', r.issuerSource),
   ];
   trusted.facts = [
-    ...fact('NDAKey registry', reg ? (reg.checked ? (reg.registered ? `Registered as ${reg.type ?? 'unknown'}` : 'Not registered') : reg.error ?? 'Not checked') : null),
-    ...fact('Trusted (NDAKey)', nd.isIssuerTrusted === undefined ? null : nd.isIssuerTrusted ? 'Yes' : 'No'),
+    ...fact(`Trusted by ${PILA_LABEL}`, ctxOk ? (nd.isIssuerTrusted ? 'Yes' : 'No') : null),
     ...fact('Credential type', r.types?.join(', ')),
   ];
-  return base([integrity, status, issuer, trusted], input, r.issuer ?? fallbackIssuer, r.id ?? null, requestId, r.subject ?? {}, pill);
+  const v = base([integrity, status, issuer, trusted], input, r.issuer ?? fallbackIssuer, r.id ?? null, requestId, r.subject ?? {}, pill);
+  return ctxOk && !nd.isIssuerTrusted ? { ...v, headline: `issuer not registered with ${PILA_LABEL}` } : v;
 }
 
 function base(checks: Check[], input: Record<string, unknown> | string, issuerDid: string | null, vcId: string | null,
