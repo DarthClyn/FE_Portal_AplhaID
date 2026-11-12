@@ -24,7 +24,7 @@
 .managed { font-size: 12px; color: var(--muted); padding-left: 8px; display: flex; align-items: center; gap: 6px; }
 .managed .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok-mark); }
 .collapse-btn { position: absolute; right: -11px; top: 50%; width: 22px; height: 46px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--muted); display: grid; place-items: center; cursor: pointer; }
-.main { padding: 32px 40px 48px; min-width: 0; }
+.main { padding: 32px 40px 48px; min-width: 0; background: var(--bg-page); }
 .shell--collapsed .brand__text, .shell--collapsed .nav__label, .shell--collapsed .user__text, .shell--collapsed .user__chev, .shell--collapsed .managed { display: none; }
 .shell--collapsed .brand, .shell--collapsed .nav__item { justify-content: center; padding-left: 0; padding-right: 0; }
 .shell--collapsed .user { justify-content: center; padding: 6px; }

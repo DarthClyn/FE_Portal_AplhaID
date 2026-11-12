@@ -11,6 +11,7 @@
   --bg: #FFFFFF;
   --bg-soft: #F7F8FA;
   --bg-sunk: #F3F4F6;
+  --bg-page: #F7F9FC; /* backdrop behind the cards (app pages) */
 
   --brand: #C8102E;
   --brand-soft: #FDECEE;
