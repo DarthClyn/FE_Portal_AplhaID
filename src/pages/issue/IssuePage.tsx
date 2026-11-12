@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Plus, Save, Send, Upload } from 'lucide-react';
+import { CheckCircle2, Download, Plus, Save, Send, Upload } from 'lucide-react';
 import { PORTAL, bankLabel } from '@/config/portal';
 import { Banner, Button, Card, Collapsible, FieldValues, Mark, PageHeader } from '@/shared/components';
 import {
@@ -170,9 +170,6 @@ export function IssuePage() {
         title={isIssued ? 'eLC issued' : 'Issue eLC'}
         actions={isIssued ? (
           <>
-            {sendTo && (sendCtl.state.kind === 'idle' || sendCtl.state.kind === 'error') && (
-              <Button variant="primary" icon={<Send size={16} />} onClick={() => void sendCtl.send()}>Send to {sendTo.name}</Button>
-            )}
             <Button data-tour="download-elc" icon={<Download size={16} />} onClick={() => downloadJson(issued.vc, `${form.fields.lcNumber || issued.txId}.json`)}>Download signed eLC</Button>
             <Button icon={<Plus size={16} />} onClick={reset}>Issue another eLC</Button>
           </>
@@ -187,7 +184,12 @@ export function IssuePage() {
         )}
       />
       {isIssued && (
-        <Banner tone="ok" title={`eLC issued · ${form.fields.lcNumber} is now Active`}>
+        <Banner tone="ok" title={`eLC issued · ${form.fields.lcNumber} is now Active`}
+          action={sendTo && (sendCtl.state.kind === 'sent'
+            ? <span className="banner-sent" data-tour="elc-sent"><CheckCircle2 size={16} /> Sent to {sendTo.name}</span>
+            : <Button variant="primary" icon={<Send size={16} />} loading={sendCtl.state.kind === 'sending'} onClick={() => void sendCtl.send()} data-tour="send-elc">
+                {sendCtl.state.kind === 'error' ? 'Try sending again' : `Send to ${sendTo.name}`}
+              </Button>)}>
           Signed with {PORTAL.bank.name}'s key and saved to Overview.
         </Banner>
       )}
@@ -216,7 +218,7 @@ export function IssuePage() {
         </Card>
         <SidePanel form={form} done={done} issues={issues} showIssues={attempted || issues > 0} embedPdf={embedPdf} setEmbedPdf={setEmbedPdf}
           phase={phase} onSign={() => void sign()} issued={issued} issuedAt={issuedAt} trustedPartner={trustedPartner}
-          sendCard={isIssued ? <SendCard vc={issued.vc} ctl={sendCtl} /> : null} />
+          sendCard={isIssued ? <SendCard vc={issued.vc} ctl={sendCtl} sentOnly /> : null} />
       </div>
     </>
   );

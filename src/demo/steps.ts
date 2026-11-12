@@ -18,6 +18,8 @@ export interface DemoStep {
   waitFor?: string;
   /** Seconds to read the step in auto mode before acting / moving on. */
   dwell?: number;
+  /** Seconds to wait for waitFor after the action before moving on anyway (e.g. a partner service is slow). */
+  waitTimeout?: number;
   /** If the action's element is missing (e.g. an empty inbox), what the demo does instead. */
   fallback?: 'verify-sample';
 }
@@ -27,7 +29,7 @@ export const STEPS: DemoStep[] = [
     id: 'overview', flow: 1, route: '/overview',
     target: '[data-tour="overview-stats"], [data-tour="overview-table"]', cardAnchor: '[data-tour="overview-stats"]',
     title: 'Overview',
-    body: 'Every eLC Bank Alpha has issued: how many are active, expiring soon or expired, and one row per eLC with its Tx ID, VC ID, dates and live status. Only IDs and status are kept here, never the eLC content.',
+    body: 'Every eLC Bank Alpha has issued: how many are active, expiring soon or expired, and one row per eLC with its Tx ID, VC ID, dates, live status and whether it was sent to the advising bank. Only IDs and status are kept here, never the eLC content.',
     dwell: 7,
   },
   {
@@ -47,10 +49,13 @@ export const STEPS: DemoStep[] = [
     dwell: 4,
   },
   {
-    id: 'send', flow: 1, route: '/issue', target: '[data-tour="send-card"]',
+    id: 'send', flow: 1, route: '/issue', target: '[data-tour="send-elc"]',
     title: 'Send it to the advising bank',
-    body: 'The eLC is active and recorded. It names its advising bank, Bank Beta in Vietnam, so one click sends it straight to Bank Beta\'s inbox on PILA, where it is verified independently. You can also download the signed file.',
-    dwell: 7,
+    body: 'The eLC is active and names its advising bank, Bank Beta in Vietnam. One click delivers it to Bank Beta\'s inbox on PILA, where it is checked independently. Overview then shows it as sent.',
+    action: { selector: '[data-tour="send-elc"]', label: 'Click "Send to Bank Beta"', real: true },
+    waitFor: '[data-tour="elc-sent"]',
+    waitTimeout: 15,
+    dwell: 5,
   },
   {
     id: 'inbox', flow: 2, route: '/inbox', target: '[data-tour="inbox-table"]',

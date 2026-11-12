@@ -120,6 +120,7 @@ function Tour({ mode, index, setIndex, stop }: { mode: DemoMode; index: number; 
     setCursor((c) => ({ ...c, click: true }));
     await sleep(180);
     el.click();
+    if (step.waitTimeout) setTimeout(() => { if (id === run.current) next(); }, step.waitTimeout * 1000);
     await sleep(700);
     setCursor((c) => ({ ...c, click: false, on: false }));
   }, [step, next, navigate]);

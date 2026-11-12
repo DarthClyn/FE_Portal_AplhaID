@@ -57,18 +57,21 @@ export function useSendElc(txId: string | null | undefined, vc: Record<string, u
 
 export type SendElc = ReturnType<typeof useSendElc>;
 
-const STATUS_TEXT: Record<string, string> = {
-  RECEIVED: 'Received, waiting for verification',
-  PROCESSING: 'Being verified',
-  IGNORED: 'Ignored: already received',
-};
+const STATUS_TEXT: Record<string, string> = { IGNORED: 'Already received earlier: not processed again' };
 
 /** Side-panel card: who the eLC goes to, the Send button, then the send status and the bank's result. */
-export function SendCard({ vc, ctl, sentTo }: { vc: Record<string, unknown> | null | undefined; ctl: SendElc; sentTo?: string }) {
+export function SendCard({ vc, ctl, sentTo, showCheck = false, sentOnly = false }: {
+  vc: Record<string, unknown> | null | undefined; ctl: SendElc; sentTo?: string;
+  /** Offer "Check result" (asks PILA for the advising bank's verdict). */
+  showCheck?: boolean;
+  /** Show the card only once sent (the Send button is elsewhere, e.g. the issued banner). */
+  sentOnly?: boolean;
+}) {
   // Without the signed file, an earlier send can still be shown (its bank comes from the record).
   const partner = advisingPartner(vc) ?? (sentTo ? partnerByBic(sentTo) : null);
   if (!partner) return null;
   const { state, send, check } = ctl;
+  if (sentOnly && state.kind !== 'sent') return null;
   const sent = state.kind === 'sent' ? state.sent : null;
   const decided = sent?.status === 'CONCLUDED' && sent.decision;
   return (
@@ -93,16 +96,17 @@ export function SendCard({ vc, ctl, sentTo }: { vc: Record<string, unknown> | nu
         <>
           <ul className="send-card__steps">
             <li className="done"><CheckCircle2 size={15} /> Sent {fmtDateTime(sent.at)}</li>
-            <li className={decided ? (sent.decision === 'PASS' ? 'done' : 'bad') : 'wait'}>
-              {decided ? (sent.decision === 'PASS' ? <CheckCircle2 size={15} /> : <XCircle size={15} />) : <Clock size={15} />}
-              {decided
-                ? sent.decision === 'PASS' ? `${partner.name} verified it: PASS` : `${partner.name} rejected it: ${(sent.reasons ?? []).join(', ') || 'FAIL'}`
-                : STATUS_TEXT[sent.status] ?? sent.status}
-            </li>
+            {decided && (
+              <li className={sent.decision === 'PASS' ? 'done' : 'bad'}>
+                {sent.decision === 'PASS' ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
+                {sent.decision === 'PASS' ? `${partner.name} verified it` : `${partner.name} rejected it: ${(sent.reasons ?? []).join(', ') || 'FAIL'}`}
+              </li>
+            )}
+            {sent.status === 'IGNORED' && <li className="wait"><Clock size={15} /> {STATUS_TEXT.IGNORED}</li>}
           </ul>
           {sent.pilaRequestId && <div className="send-card__ref"><span className="muted">PILA request ID</span><CopyId value={sent.pilaRequestId} head={8} tail={6} /></div>}
           {state.kind === 'sent' && state.note && <p className="send-card__note muted">{state.note}</p>}
-          {!decided && <Button variant="ghost" size="sm" icon={<RefreshCw size={14} />} loading={state.kind === 'sent' && state.checking} onClick={() => void check()}>Check result</Button>}
+          {showCheck && !decided && <Button variant="ghost" size="sm" icon={<RefreshCw size={14} />} loading={state.kind === 'sent' && state.checking} onClick={() => void check()}>Check result</Button>}
         </>
       )}
     </Card>

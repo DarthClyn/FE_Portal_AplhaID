@@ -11,3 +11,7 @@
 .tone-warn { color: var(--warn-ink) !important; }
 .tone-bad { color: var(--bad-ink) !important; }
 @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
+
+.sent-cell { display: flex; flex-direction: column; }
+.sent-cell strong { font-weight: 600; font-size: 13.5px; }
+.tone-ok { color: var(--ok); }

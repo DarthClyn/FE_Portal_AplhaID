@@ -97,7 +97,7 @@ export function ElcDetailPage() {
               ...(r.status === 'suspended' ? [{ label: 'Suspended', value: `${fmtDate(r.updatedAt)}${r.reason ? ` · ${r.reason}` : ''}` }] : []),
             ]} />
           </Card>
-          {(vc || r.sent) && r.status === 'active' || r.sent ? <SendCard vc={vc} ctl={sendCtl} sentTo={r.sent?.to} /> : null}
+          {(vc || r.sent) && r.status === 'active' || r.sent ? <SendCard vc={vc} ctl={sendCtl} sentTo={r.sent?.to} showCheck /> : null}
           <Card>
             <h3 className="card-h">Activity</h3>
             {activity.loading && !activity.data ? <div className="row gap-8 muted" style={{ marginTop: 12 }}><Spinner size={14} /> Loading…</div> : (

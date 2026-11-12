@@ -53,3 +53,4 @@
 .send-card__steps li.wait { color: var(--warn-ink); }
 .send-card__ref { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; }
 .send-card__note { font-size: 12px; margin: 0 0 8px; }
+.banner-sent { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; color: var(--ok); }
