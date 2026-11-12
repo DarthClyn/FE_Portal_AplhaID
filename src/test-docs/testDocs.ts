@@ -24,14 +24,14 @@ export const useTestDocs = () => useSyncExternalStore(subscribe, () => memory);
 /** Sample eLCs shown on the Verify page (files in public/test-docs/). */
 export const TEST_DOCS = [
   {
-    file: 'bank-alpha-elc.json',
+    file: 'Alpha-eLC-Valid.json',
     title: 'Bank Alpha eLC · LC-2026-000512',
     detail: 'W3C credential (JSON) signed by Bank Alpha',
     via: 'TOTM',
   },
   {
-    file: 'pila-elc.jwt',
-    title: 'PILA eLC · ALPHAID-LC-2026-000418',
+    file: 'Beta-eLC-Valid.jwt',
+    title: 'Bank Beta eLC · ALPHAID-LC-2026-000418',
     detail: 'VC-JWT issued on PILA',
     via: 'PILA',
   },
