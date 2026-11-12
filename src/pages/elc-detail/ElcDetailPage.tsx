@@ -11,6 +11,8 @@ import { daysUntil, fmtDate, fmtDateTime } from '@/shared/services/format';
 import { rememberSigned, signedElc } from '@/shared/services/session';
 import { lookupBank, trustApi } from '@/shared/services/trustApi';
 import { useAsync } from '@/shared/services/useAsync';
+import { SendCard, useSendElc } from '@/pages/issue/SendToAdvisingBank';
+import '@/pages/issue/Issue.css';
 import './ElcDetail.css';
 
 /** One eLC: its record (IDs, status, dates), activity from the audit log, and read-only details when the signed file is at hand. */
@@ -24,6 +26,7 @@ export function ElcDetailPage() {
   const activity = useAsync(() => trustApi.audit(500).then((r) => r.data.lines.map(toEvent).filter((e) => e.vcId === vcId || (rec.data && e.txId === rec.data.txId))), [vcId, rec.data?.txId]);
   const [vc, setVc] = useState<Record<string, unknown> | null>(() => signedElc(vcId));
   const [fileError, setFileError] = useState<string | null>(null);
+  const sendCtl = useSendElc(rec.data?.txId, vc, rec.data?.sent ?? null);
 
   const form = useMemo(() => (vc ? formFromVc(vc) : null), [vc]);
   const attachments = (vc?.credentialSubject as { attachments?: { filename: string; mimeType?: string }[] } | undefined)?.attachments
@@ -94,6 +97,7 @@ export function ElcDetailPage() {
               ...(r.status === 'suspended' ? [{ label: 'Suspended', value: `${fmtDate(r.updatedAt)}${r.reason ? ` · ${r.reason}` : ''}` }] : []),
             ]} />
           </Card>
+          {(vc || r.sent) && r.status === 'active' || r.sent ? <SendCard vc={vc} ctl={sendCtl} sentTo={r.sent?.to} /> : null}
           <Card>
             <h3 className="card-h">Activity</h3>
             {activity.loading && !activity.data ? <div className="row gap-8 muted" style={{ marginTop: 12 }}><Spinner size={14} /> Loading…</div> : (

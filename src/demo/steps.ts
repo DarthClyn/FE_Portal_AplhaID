@@ -47,10 +47,10 @@ export const STEPS: DemoStep[] = [
     dwell: 4,
   },
   {
-    id: 'send', flow: 1, route: '/issue', target: '[data-tour="download-elc"]',
+    id: 'send', flow: 1, route: '/issue', target: '[data-tour="send-card"]',
     title: 'Send it to the advising bank',
-    body: 'The eLC is active and recorded. Download the signed file and send it to the advising bank, which can verify it independently, on its own platform.',
-    dwell: 6,
+    body: 'The eLC is active and recorded. It names its advising bank, Bank Beta in Vietnam, so one click sends it straight to Bank Beta\'s inbox on PILA, where it is verified independently. You can also download the signed file.',
+    dwell: 7,
   },
   {
     id: 'inbox', flow: 2, route: '/inbox', target: '[data-tour="inbox-table"]',

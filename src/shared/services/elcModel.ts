@@ -1,6 +1,6 @@
 // eLC data model for the portal: the MT700 fields the TOTM Trust API signs (see totm-trust-api src/elc.js ELC_FIELDS),
 // grouped into the form sections of the design, with labels, MT700 tags, required flags and validation.
-import { homeBankLabel, partnerLabels } from '@/config/portal';
+import { PORTAL, bankLabel, homeBankLabel, partnerByBic, partnerByLabel, partnerInText, partnerLabels } from '@/config/portal';
 import { fmtAmount, fmtDate } from './format';
 
 export type FieldKind = 'text' | 'textarea' | 'select' | 'date' | 'segmented' | 'readonly' | 'partner';
@@ -221,7 +221,15 @@ export function formFromJson(input: unknown, base: ElcForm = emptyForm()): { for
     } else if (API_KEYS.has(k) && v != null && typeof v !== 'object') {
       form.fields[k] = String(v).trim();
       count += 1;
+    } else if (k === 'advisingBankBic' || k === 'issuingBankBic') {
+      count += 1; // set from the partner / home bank when issuing
     } else ignored.push(raw);
+  }
+  // Available with (the advising bank) must be one of the partner banks: match it by BIC, then by name.
+  for (const key of ['availableWith', 'drawee'] as const) {
+    if (partnerLabels().includes(form.fields[key] ?? '')) continue;
+    const p = (key === 'availableWith' ? partnerByBic(src.advisingBankBic as string) : null) ?? partnerInText(form.fields[key]);
+    if (p) form.fields[key] = bankLabel(p.name, p.jurisdiction);
   }
   return { form, ignored, count };
 }
@@ -233,6 +241,10 @@ export function apiData(form: ElcForm): Record<string, unknown> {
   if (typeof data.amount === 'string') data.amount = data.amount.replace(/,/g, '');
   const docs = form.docs.filter((d) => filled(d.title)).map((d) => (filled(d.detail) ? `${d.title.trim()} — ${d.detail.trim()}` : d.title.trim()));
   if (docs.length) data.documentsRequired = docs;
+  // BICs, as in PILA's eLCs: the advising bank's inbox checks advisingBankBic.
+  data.issuingBankBic = PORTAL.bank.bic;
+  const advising = partnerByLabel(form.fields.availableWith);
+  if (advising) data.advisingBankBic = advising.bic;
   return data;
 }
 

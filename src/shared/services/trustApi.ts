@@ -26,6 +26,29 @@ export interface VcRecord {
   createdAt: string;
   updatedAt: string;
   reason?: string;
+  /** Set once the eLC was sent to the advising bank's inbox. */
+  sent?: ElcSent;
+}
+
+/** An eLC sent to the advising bank (Bank Beta VN, via PILA's Beta Inbox API). */
+export interface ElcSent {
+  to: string;
+  toName: string;
+  via: string;
+  at: string;
+  status: string; // RECEIVED | PROCESSING | CONCLUDED | IGNORED
+  decision?: 'PASS' | 'FAIL' | null;
+  reasons?: string[];
+  pilaRequestId?: string | null;
+}
+
+export interface SendResult {
+  txId: string;
+  available: boolean;
+  status: string;
+  decision?: 'PASS' | 'FAIL' | null;
+  reasons?: string[];
+  note?: string;
 }
 
 export interface VcList {
@@ -95,6 +118,9 @@ export const trustApi = {
   verificationContext: (vcId: string, issuerDid: string) =>
     http.post<VerificationContext>('/vp/verification-context', { vcIds: [{ vcId, issuerDid }] }),
 
+  /** Send an issued eLC to its advising bank's inbox (Bank Beta VN on PILA). */
+  sendElc: (txId: string, vc: Record<string, unknown>) => http.post<ElcSent & { txId: string; vcId: string }>('/admin/elc/send', { txId, vc }, 30000),
+  sendResult: (txId: string) => http.get<SendResult>(`/admin/elc/send/${enc(txId)}`),
   issueElc: (body: { data: Record<string, unknown>; attachments?: { filename: string; mimeType: string; data: string }[] }) =>
     http.post<IssueResponse>('/admin/elc/issue', body, 60000),
   listVcs: () => http.get<VcList>('/admin/vcs'),

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { CheckCircle2, List, ShieldCheck, Signature } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, Checkbox, ElcSummaryCard, KeyValue, Mark } from '@/shared/components';
@@ -17,6 +18,8 @@ interface Props {
   issued: IssueResponse | null;
   issuedAt: string | null;
   trustedPartner: string | null;
+  /** Issued state: the Send to advising bank card. */
+  sendCard?: ReactNode;
 }
 
 export function SidePanel(p: Props) {
@@ -37,6 +40,7 @@ export function SidePanel(p: Props) {
           <Button variant="primary" size="lg" block icon={<List size={18} />} className="side-cta" onClick={() => navigate(`/overview/${encodeURIComponent(p.issued!.vcId)}`)}>View in Overview</Button>
           <p className="side-note muted">{p.embedPdf ? 'PDF copy embedded · ' : ''}recorded in Audit log</p>
         </Card>
+        {p.sendCard}
       </div>
     );
   }

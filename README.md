@@ -75,7 +75,7 @@ The result shows "via PILA" and the same four checks as a TOTM eLC.
 | Variable (portal `.env` / Vercel) | Purpose |
 | --- | --- |
 | `PILA_PARTNER_API_KEY` | NDAKey verifier key for the verification context (SECRET, server side only) |
-| `PILA_NDAKEY_URL` | NDAKey API base (default beta) |
+| `PILA_NDAKEY_URL` | PILA verification context base (default `https://elc-beta.ndakey.vn/api/v1`, the eLC pilot environment) |
 
 ## Layout
 

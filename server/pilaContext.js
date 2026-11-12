@@ -3,7 +3,9 @@
 // the credential's live status. The NDAKey verifier key (PILA_PARTNER_API_KEY) stays here, never in the browser.
 // Integrity and signature are checked separately by PILA's SDK on the TOTM Trust API (POST /api/v1/pila/verify).
 
-const DEFAULT_URL = 'https://api-beta.ndakey.vn/service/api/v1';
+// The eLC pilot environment, where PILA registers eLC issuers and credentials (confirmed by PILA, 2026-11-12). The
+// verifier guide's api-beta.ndakey.vn/service/api/v1 does not know them.
+const DEFAULT_URL = 'https://elc-beta.ndakey.vn/api/v1';
 const str = (v, max = 300) => typeof v === 'string' && v.length > 0 && v.length <= max;
 
 /**

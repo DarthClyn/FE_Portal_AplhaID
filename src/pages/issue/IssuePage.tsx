@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Plus, Save, Upload } from 'lucide-react';
+import { Download, Plus, Save, Send, Upload } from 'lucide-react';
 import { PORTAL, bankLabel } from '@/config/portal';
 import { Banner, Button, Card, Collapsible, FieldValues, Mark, PageHeader } from '@/shared/components';
 import {
@@ -15,6 +15,7 @@ import { DraftsMenu } from './DraftsMenu';
 import { trustApi, type IssueResponse } from '@/shared/services/trustApi';
 import { FormSection, type Attachment } from './FormSection';
 import { SidePanel } from './SidePanel';
+import { SendCard, advisingPartner, useSendElc } from './SendToAdvisingBank';
 import { useDemo } from '@/demo/DemoProvider';
 import { SigningModal } from '@/demo/SigningModal';
 import { sampleElc } from '@/test-docs/sampleElc'; // test-docs
@@ -40,6 +41,8 @@ export function IssuePage() {
   const [origin, setOrigin] = useState<Draft['origin']>('manual');
   const importInput = useRef<HTMLInputElement>(null);
   const demo = useDemo();
+  const sendCtl = useSendElc(issued?.txId, issued?.vc);
+  const sendTo = advisingPartner(issued?.vc);
 
   const errors = useMemo(() => validate(form), [form]);
   const done = requiredDone(errors);
@@ -167,6 +170,9 @@ export function IssuePage() {
         title={isIssued ? 'eLC issued' : 'Issue eLC'}
         actions={isIssued ? (
           <>
+            {sendTo && (sendCtl.state.kind === 'idle' || sendCtl.state.kind === 'error') && (
+              <Button variant="primary" icon={<Send size={16} />} onClick={() => void sendCtl.send()}>Send to {sendTo.name}</Button>
+            )}
             <Button data-tour="download-elc" icon={<Download size={16} />} onClick={() => downloadJson(issued.vc, `${form.fields.lcNumber || issued.txId}.json`)}>Download signed eLC</Button>
             <Button icon={<Plus size={16} />} onClick={reset}>Issue another eLC</Button>
           </>
@@ -209,7 +215,8 @@ export function IssuePage() {
           })}
         </Card>
         <SidePanel form={form} done={done} issues={issues} showIssues={attempted || issues > 0} embedPdf={embedPdf} setEmbedPdf={setEmbedPdf}
-          phase={phase} onSign={() => void sign()} issued={issued} issuedAt={issuedAt} trustedPartner={trustedPartner} />
+          phase={phase} onSign={() => void sign()} issued={issued} issuedAt={issuedAt} trustedPartner={trustedPartner}
+          sendCard={isIssued ? <SendCard vc={issued.vc} ctl={sendCtl} /> : null} />
       </div>
     </>
   );

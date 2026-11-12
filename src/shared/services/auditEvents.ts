@@ -21,6 +21,7 @@ export interface AuditEvent {
 
 const MAP: Record<string, { label: string; code: string; category: AuditCategory }> = {
   'elc.issue': { label: 'eLC issued', code: 'ELC_ISSUED', category: 'issuing' },
+  'elc.send': { label: 'eLC sent to advising bank', code: 'ELC_SENT', category: 'issuing' },
   'admin.vc.register': { label: 'eLC registered', code: 'ELC_REGISTERED', category: 'issuing' },
   'admin.vc.suspend': { label: 'eLC suspended', code: 'ELC_SUSPENDED', category: 'issuing' },
   'vc.verify': { label: 'Content check', code: 'VERIFY_CONTENT', category: 'verification' },
