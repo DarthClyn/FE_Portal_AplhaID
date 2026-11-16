@@ -21,7 +21,7 @@ const PAGE = 10;
 /** Files partners sent to the Alpha ID inbox (POST /pila/send on their side). */
 export function InboxPage() {
   const navigate = useNavigate();
-  const { data, error, loading, reload, setData } = useAsync(() => trustApi.inbox(100).then((r) => r.data.files));
+  const { data, error, loading, reload, setData } = useAsync(() => trustApi.inbox(100).then((r) => r.data.files), [], { cacheKey: 'inbox' });
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [page, setPage] = useState(1);

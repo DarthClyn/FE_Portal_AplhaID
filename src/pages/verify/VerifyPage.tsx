@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BadgeCheck, CalendarCheck, Download, FileJson, Fingerprint, Lock, PenLine, Upload } from 'lucide-react';
+import { BadgeCheck, CalendarCheck, Download, EyeOff, FileJson, Fingerprint, Lock, PenLine, Upload } from 'lucide-react';
 import { PORTAL } from '@/config/portal';
 import {
   Button, Card, CopyId, FileDrop, KeyValue, Mark, PageHeader, Spinner, StatusPill, WithFlag,
@@ -20,7 +20,8 @@ type State =
 
 export function VerifyPage() {
   const [state, setState] = useState<State>({ kind: 'idle' });
-  const [open, setOpen] = useState<Record<string, boolean>>({ integrity: true });
+  // Check drop-downs always start closed; the verdict card says what matters.
+  const [open, setOpen] = useState<Record<string, boolean>>({});
 
   const run = async (vc: unknown, fileName: string) => {
     if (!looksLikeVc(vc) && !looksLikeJwt(vc)) {
@@ -29,8 +30,7 @@ export function VerifyPage() {
     }
     setState({ kind: 'checking', fileName });
     const result = await verifyCredential(vc);
-    setOpen(Object.fromEntries(result.checks.map((c) => [c.id, c.state !== 'pass'])) as Record<string, boolean>);
-    if (result.checks.every((c) => c.state === 'pass')) setOpen({ integrity: true });
+    setOpen({});
     setState({ kind: 'done', fileName, result });
   };
 
@@ -126,6 +126,7 @@ export function VerifyPage() {
             </div>
             {(state.kind === 'checking' ? PENDING : state.result.checks).map((c) => (
               <CheckRow key={c.id} check={c} pending={state.kind === 'checking'} open={!!open[c.id]}
+                notReliedOn={state.kind === 'done' && changedAfterSigning(state.result) && c.id !== 'integrity'}
                 onToggle={() => setOpen((o) => ({ ...o, [c.id]: !o[c.id] }))} />
             ))}
             <div className="checks__foot"><Lock size={13} /> Only the result is stored. The eLC content is checked, never kept.</div>
@@ -157,8 +158,13 @@ const PENDING: Check[] = [
 
 const PILL = { pass: ['Passed', 'ok'], fail: ['Failed', 'bad'], error: ['Not checked', 'warn'] } as const;
 
-function CheckRow({ check, pending, open, onToggle }: { check: Check; pending: boolean; open: boolean; onToggle: () => void }) {
-  const [text, tone] = PILL[check.state];
+/** Integrity failed: the file was changed after signing, so nothing else read from it can be relied on. */
+const changedAfterSigning = (r: Verification) => r.checks.find((c) => c.id === 'integrity')?.state === 'fail';
+
+function CheckRow({ check, pending, open, onToggle, notReliedOn = false }: { check: Check; pending: boolean; open: boolean; onToggle: () => void; notReliedOn?: boolean }) {
+  // Once Integrity fails, the other answers describe a changed file: show them as neutral, not green or red.
+  const [text, tone] = notReliedOn ? (['Not relied on', 'neutral'] as const) : PILL[check.state];
+  if (notReliedOn) check = { ...check, state: 'na' as Check['state'], detail: [{ text: "Not relied on: the file changed after signing, so this answer doesn't apply to it.", state: 'na' as Check['state'] }], facts: [] };
   return (
     <div className="check">
       <button className="check__head" onClick={onToggle} disabled={pending} aria-expanded={open}>
@@ -193,6 +199,7 @@ function CheckRow({ check, pending, open, onToggle }: { check: Check; pending: b
 }
 
 const reason = (r: Verification) => {
+  if (changedAfterSigning(r)) return 'changed after signing';
   if (r.headline) return r.headline;
   const failed = r.checks.find((c) => c.state === 'fail');
   if (!failed) return '';
@@ -203,6 +210,8 @@ const reason = (r: Verification) => {
 };
 
 function ResultCard({ r }: { r: Verification }) {
+  const changed = changedAfterSigning(r);
+  const [showDetails, setShowDetails] = useState(false);
   const f = r.fields;
   const issuerName = r.issuerName;
   const j = r.issuerJurisdiction;
@@ -213,7 +222,7 @@ function ResultCard({ r }: { r: Verification }) {
   const head = r.overall === 'pass'
     ? { title: `Verified · this ${noun} is genuine`, sub: 'All 4 checks passed. Safe to rely on.' }
     : r.overall === 'fail'
-      ? { title: `Not verified · ${reason(r)}`, sub: `Don't rely on this ${noun}. Ask ${who} for a new copy.` }
+      ? { title: `Failed · ${reason(r)}`, sub: `Don't rely on this ${noun}. Ask ${who} for a new copy.` }
       : { title: 'Could not confirm', sub: 'A check could not be completed. Treat as not verified and try again.' };
   const pill = r.overall === 'pass' ? (r.status ?? 'active') : r.overall === 'fail' ? (r.checks[0].state === 'fail' ? 'Untrusted' : r.status ?? 'Failed') : 'Not checked';
   return (
@@ -230,17 +239,25 @@ function ResultCard({ r }: { r: Verification }) {
           <strong>{title}</strong>
           <StatusPill status={pill} tone={r.overall === 'pass' ? 'ok' : r.overall === 'fail' ? 'bad' : 'warn'} dot={false} />
         </div>
-        <KeyValue rows={[
-          ...(party ? [{ label: f.beneficiaryName ? 'Beneficiary' : 'Holder', value: String(party) }] : []),
-          { label: 'Issued by', value: <WithFlag j={j}><span title={r.issuerDid ?? ''}>{issuerName}</span></WithFlag> },
-          ...(f.expiryDate ? [{ label: 'Expires', value: fmtDate(String(f.expiryDate)) }] : []),
-          { label: 'Verified with', value: r.platform === 'PILA' ? 'PILA SDK + NDAKey' : 'TOTM Trust API' },
-        ]} />
+        {changed && !showDetails ? (
+          <div className="result__hidden">
+            <strong><EyeOff size={14} /> {noun === 'eLC' ? 'eLC' : 'Credential'} details hidden</strong>
+            <span>Beneficiary, issuer and expiry come from a file that was changed after {who} signed it, so they can't be trusted.</span>
+            <button className="link-btn" onClick={() => setShowDetails(true)}>Show anyway</button>
+          </div>
+        ) : (
+          <KeyValue rows={[
+            ...(party ? [{ label: f.beneficiaryName ? 'Beneficiary' : 'Holder', value: String(party) }] : []),
+            { label: 'Issued by', value: <WithFlag j={j}><span title={r.issuerDid ?? ''}>{issuerName}</span></WithFlag> },
+            ...(f.expiryDate ? [{ label: 'Expires', value: fmtDate(String(f.expiryDate)) }] : []),
+            { label: 'Verified with', value: r.platform === 'PILA' ? 'PILA SDK + NDAKey' : 'TOTM Trust API' },
+          ]} />
+        )}
         <KeyValue divider rows={[
           ...(r.platform === 'TOTM' ? [{ label: 'Tx ID', value: <CopyId value={r.txId} full /> }] : []),
           { label: 'VC ID', value: <CopyId value={r.vcId} /> },
         ]} />
-        {r.overall === 'fail' && r.checks[0].state === 'fail' && (
+        {changed && showDetails && (
           <p className="result__warn">These details can't be trusted. The file was changed after {who} signed it.</p>
         )}
       </div>

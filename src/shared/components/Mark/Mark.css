@@ -3,3 +3,4 @@
 .mark--fail { background: var(--bad); }
 .mark--error { background: var(--warn); }
 .mark--todo { border: 1.5px solid var(--line); background: var(--bg); }
+.mark--na { background: var(--bg); border: 1.5px solid var(--faint); color: var(--muted); }

@@ -55,3 +55,8 @@
 .check__facts div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .check__facts dt { font-size: 11.5px; color: var(--muted); }
 .check__facts dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+
+.result__hidden { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 8px; background: var(--bg-soft); border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.result__hidden strong { display: flex; align-items: center; gap: 6px; color: var(--ink-2); font-weight: 600; }
+.link-btn { align-self: flex-start; border: 0; background: none; padding: 2px 0; color: var(--primary); font: 600 13px var(--font); cursor: pointer; }
+.check__item--na { color: var(--muted); }

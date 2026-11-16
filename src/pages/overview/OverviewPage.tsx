@@ -28,7 +28,7 @@ export const elcPath = (vcId: string) => `/overview/${encodeURIComponent(vcId)}`
 /** Overview: every eLC this bank has issued, with counts, search, filters and row actions. */
 export function OverviewPage() {
   const navigate = useNavigate();
-  const { data, error, loading } = useAsync(() => trustApi.listVcs().then((r) => r.data));
+  const { data, error, loading } = useAsync(() => trustApi.listVcs().then((r) => r.data), [], { cacheKey: 'vcs' });
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [range, setRange] = useState<RangeValue>({ preset: '90' });

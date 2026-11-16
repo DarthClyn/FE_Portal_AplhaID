@@ -27,7 +27,7 @@ const PAGE = 10;
 
 export function AuditPage() {
   const [params] = useSearchParams();
-  const { data, error, loading, reload } = useAsync(() => trustApi.audit(500).then((r) => ({ total: r.data.total, events: r.data.lines.map(toEvent) })));
+  const { data, error, loading, reload } = useAsync(() => trustApi.audit(500).then((r) => ({ total: r.data.total, events: r.data.lines.map(toEvent) })), [], { cacheKey: 'audit' });
   const [q, setQ] = useState(params.get('q') ?? '');
   const [filter, setFilter] = useState<Filter>('all');
   const [range, setRange] = useState<RangeValue>({ preset: '7' });

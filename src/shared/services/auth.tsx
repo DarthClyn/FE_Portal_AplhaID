@@ -1,6 +1,7 @@
 // Portal session: who is signed in. The check itself happens server side (server/auth.js); the browser only holds an
 // HttpOnly cookie it cannot read, and asks /api/auth/me who it belongs to.
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { clearListCache } from './useAsync';
 import { Navigate, useLocation } from 'react-router-dom';
 
 export interface User { username: string; name: string }
@@ -27,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((b) => setUser(b?.user ?? null))
       .catch(() => setUser(null))
       .finally(() => setChecking(false));
-    const onOut = () => setUser(null);
+    const onOut = () => { clearListCache(); setUser(null); };
     window.addEventListener(SIGNED_OUT, onOut);
     return () => window.removeEventListener(SIGNED_OUT, onOut);
   }, []);
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => undefined);
+    clearListCache();
     setUser(null);
   }, []);
 

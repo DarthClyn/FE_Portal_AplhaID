@@ -97,6 +97,16 @@ export function IssuePage() {
     setAttachments((a) => [...a, ...added]);
   };
 
+  // An open section can't be closed while its required fields are empty: the missing ones are shown instead.
+  const toggleSection = (id: SectionId, errs: string[]) => {
+    const missing = isIssued ? [] : errs.filter((k) => errors[k] === 'Required');
+    if (open[id] && missing.length) {
+      setTouched((t) => new Set([...t, ...missing]));
+      return;
+    }
+    setOpen((o) => ({ ...o, [id]: !o[id] }));
+  };
+
   const saveCurrentDraft = () => {
     try {
       const { draft, withoutAttachments } = saveDraft({ id: draftId ?? undefined, origin, form, attachments, embedPdf });
@@ -206,7 +216,7 @@ export function IssuePage() {
               : complete && !s.optional ? <Mark state="pass" size={20} /> : s.optional ? <span>Optional</span> : null;
             return (
               <Collapsible key={s.id} title={s.title} summary={sectionSummary(s.id, form, attachments.length)} aside={aside}
-                open={!!open[s.id]} onToggle={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))}>
+                open={!!open[s.id]} onToggle={() => toggleSection(s.id, errs)}>
                 {isIssued ? <IssuedValues id={s.id} form={form} attachments={attachments} /> : (
                   <FormSection section={s} form={form} errors={errors} show={show} setField={setField} touch={touch}
                     setDocs={(docs) => setForm((f) => ({ ...f, docs }))} attachments={attachments} addFiles={(f) => void addFiles(f)}
