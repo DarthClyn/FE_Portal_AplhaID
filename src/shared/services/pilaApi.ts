@@ -28,6 +28,9 @@ export interface PilaVerifyResponse {
     status?: string; // active | revoked | expired | verified | not_found
     isIssuerTrusted?: boolean;
     didPublicKey?: string | null;
+    /** The issuer's registered bank or organisation name and BIC (null when the issuer isn't registered). */
+    issuerName?: string | null;
+    issuerBic?: string | null;
     error?: string;
     skipped?: string;
   };

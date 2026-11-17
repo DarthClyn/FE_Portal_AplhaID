@@ -7,10 +7,11 @@
 // verifier guide's api-beta.ndakey.vn/service/api/v1 does not know them.
 const DEFAULT_URL = 'https://elc-beta.ndakey.vn/api/v1';
 const str = (v, max = 300) => typeof v === 'string' && v.length > 0 && v.length <= max;
+const strOrNull = (v) => (str(v, 200) ? v : null);
 
 /**
  * body: { holderDid, vcId, issuerDid }. Returns the `ndakey` result the Verify page shows:
- * { called, requestId?, status?, isIssuerTrusted?, didPublicKey?, error?, skipped? }.
+ * { called, requestId?, status?, isIssuerTrusted?, didPublicKey?, issuerName?, issuerBic?, error?, skipped? }.
  */
 export async function verificationContext(env, body, requestId) {
   const base = (env.PILA_NDAKEY_URL || DEFAULT_URL).replace(/\/$/, '');
@@ -41,6 +42,9 @@ export async function verificationContext(env, body, requestId) {
     status: v.status,
     isIssuerTrusted: !!v.isIssuerTrusted,
     didPublicKey: v.didPublicKey ?? null,
+    // The issuer's registered bank or organisation (added by PILA on our request); null for an unregistered issuer.
+    issuerName: strOrNull(v.issuerName ?? v.issuer?.name),
+    issuerBic: strOrNull(v.issuerBic ?? v.issuer?.bic),
   };
 }
 

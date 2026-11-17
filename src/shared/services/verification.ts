@@ -210,7 +210,7 @@ async function verifyTotm(vc: Record<string, unknown>, issuer: BankEntry | null)
   status.facts = [
     ...fact('Tx ID', txId, { mono: true, copy: true }),
     ...fact('Valid from', vc.validFrom ? fmtDate(String(vc.validFrom)) : null),
-    ...fact('Valid until', dateWithDistance(vc.validUntil as string | undefined)),
+    ...fact('Valid until', validUntil(vc.validUntil, vc.credentialSubject)),
   ];
   signer.facts = [
     ...fact('Issuer DID', issuerDid, { mono: true, copy: true }),
@@ -310,10 +310,11 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
     detail: [{ text: issText, state: issState }],
   };
 
-  // 4. Trusted issuer: is the issuer registered with PILA? (PILA's verification context, isIssuerTrusted.)
+  // 4. Trusted issuer: is the issuer registered with PILA? (PILA's verification context, isIssuerTrusted + issuerName.)
+  const who = nd.issuerName ? `${nd.issuerName}${nd.issuerBic ? ` (${nd.issuerBic})` : ''}` : null;
   const [tState, tText]: [CheckState, string] =
     !ctxOk ? ['error', `Could not reach ${PILA_LABEL}: ${nd.error ?? nd.skipped ?? 'verification context not asked'}`]
-      : nd.isIssuerTrusted ? ['pass', `Registered with ${PILA_LABEL}`]
+      : nd.isIssuerTrusted ? ['pass', who ? `${who} · registered with ${PILA_LABEL}` : `Registered with ${PILA_LABEL}`]
         : ['fail', `Not registered with ${PILA_LABEL}`];
   const trusted: Check = { id: 'trusted', title: 'Trusted issuer', question: `Registered with ${PILA_LABEL}?`, state: tState, detail: [{ text: tText, state: tState }] };
 
@@ -327,7 +328,7 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
   ];
   status.facts = [
     ...fact('Valid from', r.validFrom ? fmtDate(r.validFrom) : null),
-    ...fact('Valid until', dateWithDistance(r.validUntil) ?? 'No expiry declared'),
+    ...fact('Valid until', validUntil(r.validUntil, r.subject) ?? 'No expiry declared'),
     ...fact('PILA status', nd.status?.replace('_', ' ')),
     ...fact('NDAKey request', nd.requestId, { mono: true }),
   ];
@@ -337,10 +338,14 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
     ...fact('Key from', r.issuerSource),
   ];
   trusted.facts = [
+    ...fact('Issuing bank', nd.issuerName),
+    ...fact('BIC', nd.issuerBic, { mono: true }),
     ...fact(`Trusted by ${PILA_LABEL}`, ctxOk ? (nd.isIssuerTrusted ? 'Yes' : 'No') : null),
     ...fact('Credential type', r.types?.join(', ')),
   ];
   const v = base([integrity, status, issuer, trusted], input, r.issuer ?? fallbackIssuer, r.id ?? null, requestId, r.subject ?? {}, pill);
+  // A registered issuer is shown by its bank name from PILA's registry, not by its DID.
+  if (ctxOk && nd.isIssuerTrusted && nd.issuerName) v.issuerName = nd.issuerName;
   return ctxOk && !nd.isIssuerTrusted ? { ...v, headline: `issuer not registered with ${PILA_LABEL}` } : v;
 }
 
@@ -365,6 +370,13 @@ const refOf = (requestId: string) => `VR-${requestId.slice(0, 8).toUpperCase()}`
 
 const fact = (label: string, value: unknown, opts: Partial<Fact> = {}): Fact[] =>
   value == null || value === '' ? [] : [{ label, value: String(value), ...opts }];
+
+/** The credential's own expiry, else the eLC's expiry date (31D) from its fields. */
+function validUntil(own: unknown, subject: unknown) {
+  if (typeof own === 'string' && own) return dateWithDistance(own);
+  const e = (subject as Record<string, unknown> | null | undefined)?.expiryDate;
+  return typeof e === 'string' && e && !Number.isNaN(Date.parse(e)) ? dateWithDistance(e) : null;
+}
 
 /** "31 Dec 2026 (in 50 days)" / "(ended 3 days ago)". */
 function dateWithDistance(iso?: string | null) {

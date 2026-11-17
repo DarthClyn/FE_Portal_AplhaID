@@ -89,7 +89,7 @@ function DocsEditor({ form, setDocs, errors, show }: Props) {
   const docs = form.docs;
   const update = (i: number, k: 'title' | 'detail', v: string) => setDocs(docs.map((d, n) => (n === i ? { ...d, [k]: v } : d)));
   return (
-    <Field label="Documents required" tag="46A" required wide error={show('documentsRequired') ? errors.documentsRequired : undefined}>
+    <Field label="Documents required" tag="46A" wide error={show('documentsRequired') ? errors.documentsRequired : undefined}>
       <div className="docs">
         {docs.map((d, i) => (
           <div className="doc-row" key={i}>
