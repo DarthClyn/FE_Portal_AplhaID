@@ -293,9 +293,15 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
     revoked: { text: `Revoked on the ${PILA_LABEL} network`, state: 'fail' },
     not_found: { text: `Not on record with ${PILA_LABEL}`, state: 'fail' },
   };
-  const sd = ndStatus
-    ? NDA_STATUS[ndStatus] ?? { text: `${PILA_LABEL} network status: ${ndStatus}`, state: 'fail' as CheckState }
-    : { text: `Live status not checked: ${nd.error ?? nd.skipped ?? `${PILA_LABEL} verification context not asked`}`, state: 'error' as CheckState };
+  // When PILA has no live status (not on record, or no answer), the validity dates decide: the credential's own
+  // validFrom/validUntil, else the eLC's expiry date (31D).
+  const byDate = statusFromDates(r.validFrom, r.validUntil ?? (r.subject as Record<string, unknown> | undefined)?.expiryDate);
+  const noLive = !ndStatus || ndStatus === 'not_found';
+  const sd = noLive && byDate
+    ? { text: `${byDate.text} · no live status from ${PILA_LABEL}`, state: byDate.state }
+    : ndStatus
+      ? NDA_STATUS[ndStatus] ?? { text: `${PILA_LABEL} network status: ${ndStatus}`, state: 'fail' as CheckState }
+      : { text: `Live status not checked: ${nd.error ?? nd.skipped ?? `${PILA_LABEL} verification context not asked`}`, state: 'error' as CheckState };
   const status: Check = { id: 'status', title: 'Status', question: 'Still valid today?', state: sd.state, detail: [sd] };
 
   // 3. Issuer: did the issuer named in the credential sign it?
@@ -318,7 +324,7 @@ async function verifyPila(input: Record<string, unknown> | string): Promise<Veri
         : ['fail', `Not registered with ${PILA_LABEL}`];
   const trusted: Check = { id: 'trusted', title: 'Trusted issuer', question: `Registered with ${PILA_LABEL}?`, state: tState, detail: [{ text: tText, state: tState }] };
 
-  const pill = ndStatus === 'not_found' ? 'not on record' : ndStatus === 'verified' ? 'active' : ndStatus ?? null;
+  const pill = noLive && byDate ? byDate.pill : ndStatus === 'not_found' ? 'not on record' : ndStatus === 'verified' ? 'active' : ndStatus ?? null;
   const proof = proofOf(input);
   integrity.facts = [
     ...fact('Format', r.format === 'jwt' ? 'VC-JWT' : 'JSON-LD (Data Integrity)'),
@@ -370,6 +376,15 @@ const refOf = (requestId: string) => `VR-${requestId.slice(0, 8).toUpperCase()}`
 
 const fact = (label: string, value: unknown, opts: Partial<Fact> = {}): Fact[] =>
   value == null || value === '' ? [] : [{ label, value: String(value), ...opts }];
+
+/** Status from validity dates alone (used when PILA has no live status). Null when there are no dates. */
+function statusFromDates(from: unknown, until: unknown): { text: string; state: CheckState; pill: string } | null {
+  const ok = (v: unknown): v is string => typeof v === 'string' && !Number.isNaN(Date.parse(v));
+  if (!ok(from) && !ok(until)) return null;
+  if (ok(from) && daysUntil(from) > 0) return { text: `Not valid until ${fmtDate(from)}`, state: 'fail', pill: 'not yet valid' };
+  if (ok(until) && daysUntil(until) < 0) return { text: `Expired on ${fmtDate(until)}`, state: 'fail', pill: 'expired' };
+  return { text: ok(until) ? `Within its validity dates (until ${fmtDate(until)})` : 'Valid since its start date', state: 'pass', pill: 'active' };
+}
 
 /** The credential's own expiry, else the eLC's expiry date (31D) from its fields. */
 function validUntil(own: unknown, subject: unknown) {
